@@ -54,21 +54,20 @@ const AIDiagnosticModal: React.FC<AIDiagnosticModalProps> = ({ isOpen, onClose }
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       {/* 毛玻璃背景遮罩 */}
-      <div 
+      <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       ></div>
 
       {/* 弹窗主体 */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-300">
-        
         {/* Header */}
         <div className="bg-[#111827] text-white px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-400" />
             <span className="font-bold text-lg tracking-wide">AI 深度战略诊断报告</span>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
           >
@@ -104,17 +103,17 @@ const AIDiagnosticModal: React.FC<AIDiagnosticModalProps> = ({ isOpen, onClose }
 
         {/* Footer */}
         <div className="bg-white border-t border-slate-100 px-6 py-4 flex justify-end items-center gap-6">
-          <button 
+          <button
             onClick={onClose}
             className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
             关闭
           </button>
-          <button 
+          <button
             disabled={isLoading}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-              isLoading 
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+              isLoading
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-[#111827] text-white hover:bg-slate-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
             }`}
           >

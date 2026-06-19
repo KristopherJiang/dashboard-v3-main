@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  X, 
-  Sparkles, 
-  History, 
-  AlertTriangle, 
-  TrendingDown, 
-  Zap, 
-  Activity, 
-  ChevronRight, 
-  Layers, 
-  Clock 
+import {
+  X,
+  Sparkles,
+  History,
+  AlertTriangle,
+  TrendingDown,
+  Zap,
+  Activity,
+  ChevronRight,
+  Layers,
+  Clock,
 } from 'lucide-react';
 
 interface AIAlertDrawerProps {
@@ -21,7 +21,7 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className={`fixed inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity duration-300 z-40 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
@@ -29,7 +29,7 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
       />
 
       {/* Drawer */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full w-full sm:w-[440px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -44,7 +44,9 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
               <h2 className="text-xl font-black text-gray-900 tracking-tight">AI 智能监控中心</h2>
               <div className="flex items-center gap-1.5 mt-1">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">3 Nodes Monitoring</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  3 Nodes Monitoring
+                </span>
               </div>
             </div>
           </div>
@@ -52,7 +54,7 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
             <button className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
               <History size={18} />
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             >
@@ -63,7 +65,6 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
 
         {/* Content - Alert List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-          
           {/* Alert Card 1: Critical */}
           <div className="bg-white rounded-3xl p-5 shadow-sm border border-rose-100 relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
@@ -168,7 +169,6 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Bottom Banner */}
@@ -179,7 +179,9 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
                 <Activity className="text-indigo-400 w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">AI 智能诊断</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+                  AI 智能诊断
+                </div>
                 <div className="text-xs font-medium text-white">建议优先处理新加坡节点延迟风险</div>
               </div>
             </div>
@@ -188,7 +190,6 @@ const AIAlertDrawer: React.FC<AIAlertDrawerProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
         </div>
-
       </div>
     </>
   );

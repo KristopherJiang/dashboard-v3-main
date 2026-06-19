@@ -20,13 +20,17 @@ export default function UserDemographics() {
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-900">用户画像与地域分布</h2>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Demographics</span>
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+          Demographics
+        </span>
       </div>
 
       <div className="grid grid-cols-2 gap-6 flex-1">
         {/* Regions */}
         <div className="flex flex-col justify-center gap-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Top Regions</div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Top Regions
+          </div>
           {regionData.map((region) => (
             <div key={region.name} className="flex flex-col gap-1">
               <div className="flex justify-between text-xs">
@@ -34,7 +38,10 @@ export default function UserDemographics() {
                 <span className="text-gray-500">{region.value}%</span>
               </div>
               <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full ${region.color} rounded-full`} style={{ width: `${region.value}%` }}></div>
+                <div
+                  className={`h-full ${region.color} rounded-full`}
+                  style={{ width: `${region.value}%` }}
+                ></div>
               </div>
             </div>
           ))}
@@ -42,7 +49,9 @@ export default function UserDemographics() {
 
         {/* Age Distribution */}
         <div className="flex flex-col items-center justify-center relative">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider absolute top-0 left-0">Age Dist.</div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider absolute top-0 left-0">
+            Age Dist.
+          </div>
           <div className="w-full h-[120px] mt-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -60,7 +69,7 @@ export default function UserDemographics() {
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (

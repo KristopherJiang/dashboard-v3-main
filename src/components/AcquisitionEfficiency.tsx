@@ -1,81 +1,92 @@
 import React, { useState } from 'react';
-import { UserPlus, Contact, FileCheck, Wallet, BarChart2, AlertTriangle, Lightbulb, ChevronDown, Calendar, HelpCircle } from 'lucide-react';
+import {
+  UserPlus,
+  Contact,
+  FileCheck,
+  Wallet,
+  BarChart2,
+  AlertTriangle,
+  Lightbulb,
+  ChevronDown,
+  Calendar,
+  HelpCircle,
+} from 'lucide-react';
 
 const funnelData = [
-  { 
-    step: 1, 
-    title: '注册', 
-    subtitle: 'Sign Up', 
-    icon: UserPlus, 
-    users: 12480, 
-    pctOfTotal: 100, 
-    stepCvr: null, 
-    cumCvr: 100, 
-    dropoff: null, 
+  {
+    step: 1,
+    title: '注册',
+    subtitle: 'Sign Up',
+    icon: UserPlus,
+    users: 12480,
+    pctOfTotal: 100,
+    stepCvr: null,
+    cumCvr: 100,
+    dropoff: null,
     dropoffPct: null,
     color: 'bg-[#419466]',
     topW: 100,
-    botW: 85
+    botW: 85,
   },
-  { 
-    step: 2, 
-    title: 'Live Account', 
-    subtitle: '开户', 
-    icon: Contact, 
-    users: 9984, 
-    pctOfTotal: 80, 
-    stepCvr: 80.0, 
-    cumCvr: 80.0, 
-    dropoff: 2496, 
+  {
+    step: 2,
+    title: 'Live Account',
+    subtitle: '开户',
+    icon: Contact,
+    users: 9984,
+    pctOfTotal: 80,
+    stepCvr: 80.0,
+    cumCvr: 80.0,
+    dropoff: 2496,
     dropoffPct: 20.0,
     color: 'bg-[#55a677]',
     topW: 85,
-    botW: 70
+    botW: 70,
   },
-  { 
-    step: 3, 
-    title: 'Live KYC', 
-    subtitle: '完成KYC', 
-    icon: FileCheck, 
-    users: 5990, 
-    pctOfTotal: 48, 
-    stepCvr: 60.0, 
-    cumCvr: 48.0, 
-    dropoff: 3994, 
+  {
+    step: 3,
+    title: 'Live KYC',
+    subtitle: '完成KYC',
+    icon: FileCheck,
+    users: 5990,
+    pctOfTotal: 48,
+    stepCvr: 60.0,
+    cumCvr: 48.0,
+    dropoff: 3994,
     dropoffPct: 20.0,
     color: 'bg-[#69b888]',
     topW: 70,
-    botW: 55
+    botW: 55,
   },
-  { 
-    step: 4, 
-    title: 'FTD', 
-    subtitle: '首次入金', 
-    icon: Wallet, 
-    users: 2995, 
-    pctOfTotal: 24, 
-    stepCvr: 50.0, 
-    cumCvr: 24.0, 
-    dropoff: 2995, 
+  {
+    step: 4,
+    title: 'FTD',
+    subtitle: '首次入金',
+    icon: Wallet,
+    users: 2995,
+    pctOfTotal: 24,
+    stepCvr: 50.0,
+    cumCvr: 24.0,
+    dropoff: 2995,
     dropoffPct: 50.0,
     color: 'bg-[#7dca99]',
     topW: 55,
-    botW: 40
+    botW: 40,
   },
-  { 
-    step: 5, 
-    title: 'FTT', 
-    subtitle: '首次交易', 
-    icon: BarChart2, 
-    users: 1497, 
-    pctOfTotal: 12, 
-    stepCvr: 50.0, 
-    cumCvr: 12.0, 
-    dropoff: 1498, 
+  {
+    step: 5,
+    title: 'FTT',
+    subtitle: '首次交易',
+    icon: BarChart2,
+    users: 1497,
+    pctOfTotal: 12,
+    stepCvr: 50.0,
+    cumCvr: 12.0,
+    dropoff: 1498,
     dropoffPct: 50.0,
     color: 'bg-[#a3e3bc]',
     topW: 40,
-    botW: 25
+    botW: 25,
   },
 ];
 
@@ -116,7 +127,8 @@ export default function AcquisitionEfficiency() {
           </div>
         </div>
         <div className="text-right pr-4">
-          流失人数<br/>
+          流失人数
+          <br />
           <span className="text-[10px] text-gray-400 font-normal">(人)</span>
         </div>
       </div>
@@ -126,14 +138,20 @@ export default function AcquisitionEfficiency() {
         {funnelData.map((step, index) => {
           const Icon = step.icon;
           const isHovered = hoveredStep === index;
-          
+
           // 根据索引选择颜色，与 UserDistributionSunburst 中的色域对齐
-          const colors = ['bg-[#60996D]', 'bg-[#72A87E]', 'bg-[#84B78F]', 'bg-[#96C6A0]', 'bg-[#A8D5B1]'];
+          const colors = [
+            'bg-[#60996D]',
+            'bg-[#72A87E]',
+            'bg-[#84B78F]',
+            'bg-[#96C6A0]',
+            'bg-[#A8D5B1]',
+          ];
           const barColor = colors[index] || step.color;
-          
+
           return (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`grid grid-cols-[240px_1fr_100px_120px_100px] gap-4 items-center py-3 border-b border-gray-100 last:border-0 transition-colors relative ${isHovered ? 'bg-gray-50' : ''}`}
               onMouseEnter={() => setHoveredStep(index)}
               onMouseLeave={() => setHoveredStep(null)}
@@ -149,16 +167,20 @@ export default function AcquisitionEfficiency() {
                   {step.dropoff && (
                     <div className="flex justify-between text-gray-300">
                       <span>流失人数:</span>
-                      <span className="text-rose-400 font-medium">{step.dropoff.toLocaleString()}</span>
+                      <span className="text-rose-400 font-medium">
+                        {step.dropoff.toLocaleString()}
+                      </span>
                     </div>
                   )}
                   <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-full border-4 border-transparent border-t-gray-900"></div>
                 </div>
               )}
- 
+
               {/* Col 1: Stage */}
               <div className="flex items-center gap-3 pl-4">
-                <div className={`w-6 h-6 rounded-full ${barColor} text-white flex items-center justify-center text-xs font-bold shrink-0`}>
+                <div
+                  className={`w-6 h-6 rounded-full ${barColor} text-white flex items-center justify-center text-xs font-bold shrink-0`}
+                >
                   {step.step}
                 </div>
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-400 flex items-center justify-center shrink-0">
@@ -169,16 +191,18 @@ export default function AcquisitionEfficiency() {
                   <div className="text-[10px] text-gray-500 mt-0.5">{step.subtitle}</div>
                 </div>
               </div>
- 
+
               {/* Col 2: Funnel Bar */}
               <div className="flex justify-center px-2">
-                <div 
+                <div
                   className={`${barColor} h-14 flex flex-col items-center justify-center text-white transition-all duration-300 w-full max-w-[320px]`}
-                  style={{ 
+                  style={{
                     clipPath: `polygon(${(100 - step.topW) / 2}% 0%, ${100 - (100 - step.topW) / 2}% 0%, ${100 - (100 - step.botW) / 2}% 100%, ${(100 - step.botW) / 2}% 100%)`,
                   }}
                 >
-                  <span className="text-lg font-bold leading-none mb-0.5">{step.users.toLocaleString()}</span>
+                  <span className="text-lg font-bold leading-none mb-0.5">
+                    {step.users.toLocaleString()}
+                  </span>
                   <span className="text-[10px] font-medium opacity-90">({step.pctOfTotal}%)</span>
                 </div>
               </div>
@@ -186,7 +210,15 @@ export default function AcquisitionEfficiency() {
               {/* Col 3: Step CVR */}
               <div className="text-center font-bold text-sm">
                 {step.stepCvr ? (
-                  <span className={step.stepCvr >= 70 ? 'text-emerald-400' : step.stepCvr > 50 ? 'text-orange-500' : 'text-rose-600'}>
+                  <span
+                    className={
+                      step.stepCvr >= 70
+                        ? 'text-emerald-400'
+                        : step.stepCvr > 50
+                          ? 'text-orange-500'
+                          : 'text-rose-600'
+                    }
+                  >
                     {step.stepCvr.toFixed(1)}%
                   </span>
                 ) : (
@@ -242,33 +274,49 @@ export default function AcquisitionEfficiency() {
             <AlertTriangle size={14} />
             最大流失环节
           </div>
-          
+
           <div className="space-y-4 mb-4 flex-1">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 font-bold text-gray-900 text-sm tracking-tight">
-                  <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">1</span>
+                  <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">
+                    1
+                  </span>
                   Live Account → Live KYC
                 </div>
-                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">流失最多</span>
+                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                  流失最多
+                </span>
               </div>
               <div className="flex items-center gap-4 text-xs text-gray-500 pl-7 font-medium">
-                <span>流失人数: <span className="text-rose-600 font-bold">3,994</span></span>
-                <span>Step CVR: <span className="text-rose-600 font-bold">60.0%</span></span>
+                <span>
+                  流失人数: <span className="text-rose-600 font-bold">3,994</span>
+                </span>
+                <span>
+                  Step CVR: <span className="text-rose-600 font-bold">60.0%</span>
+                </span>
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2 font-bold text-gray-900 text-sm tracking-tight">
-                  <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">2</span>
+                  <span className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">
+                    2
+                  </span>
                   Live KYC → FTD
                 </div>
-                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">转化率较低</span>
+                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
+                  转化率较低
+                </span>
               </div>
               <div className="flex items-center gap-4 text-xs text-gray-500 pl-7 font-medium">
-                <span>流失人数: <span className="text-rose-600 font-bold">2,995</span></span>
-                <span>Step CVR: <span className="text-rose-600 font-bold">50.0%</span></span>
+                <span>
+                  流失人数: <span className="text-rose-600 font-bold">2,995</span>
+                </span>
+                <span>
+                  Step CVR: <span className="text-rose-600 font-bold">50.0%</span>
+                </span>
               </div>
             </div>
           </div>
@@ -290,11 +338,15 @@ export default function AcquisitionEfficiency() {
 
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <span className="px-1.5 py-0.5 bg-emerald-400 text-white text-[10px] font-bold rounded mt-0.5">P1</span>
+              <span className="px-1.5 py-0.5 bg-emerald-400 text-white text-[10px] font-bold rounded mt-0.5">
+                P1
+              </span>
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-bold text-gray-900">优化 KYC → FTD (入金转化)</span>
-                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">优先级最高</span>
+                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                    优先级最高
+                  </span>
                 </div>
                 <ul className="text-xs text-gray-600 list-disc pl-4 space-y-0.5">
                   <li>优化入金流程，减少操作步骤</li>
@@ -304,11 +356,17 @@ export default function AcquisitionEfficiency() {
             </div>
 
             <div className="flex items-start gap-3">
-              <span className="px-1.5 py-0.5 bg-emerald-400 text-white text-[10px] font-bold rounded mt-0.5">P2</span>
+              <span className="px-1.5 py-0.5 bg-emerald-400 text-white text-[10px] font-bold rounded mt-0.5">
+                P2
+              </span>
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-bold text-gray-900">优化 FTD → FTT (首交易激活)</span>
-                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">优先级高</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    优化 FTD → FTT (首交易激活)
+                  </span>
+                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                    优先级高
+                  </span>
                 </div>
                 <ul className="text-xs text-gray-600 list-disc pl-4 space-y-0.5">
                   <li>提供新手引导，降低交易门槛</li>
@@ -318,11 +376,15 @@ export default function AcquisitionEfficiency() {
             </div>
 
             <div className="flex items-start gap-3">
-              <span className="px-1.5 py-0.5 bg-emerald-300 text-white text-[10px] font-bold rounded mt-0.5">P3</span>
+              <span className="px-1.5 py-0.5 bg-emerald-300 text-white text-[10px] font-bold rounded mt-0.5">
+                P3
+              </span>
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-bold text-gray-900">深度拆解定位问题来源</span>
-                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">优先级中</span>
+                  <span className="text-[10px] text-emerald-400 bg-emerald-50/50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+                    优先级中
+                  </span>
                 </div>
                 <ul className="text-xs text-gray-600 list-disc pl-4 space-y-0.5">
                   <li>按渠道 (Paid / IB / Organic) 拆解漏斗</li>

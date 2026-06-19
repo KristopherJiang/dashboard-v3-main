@@ -22,18 +22,19 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans p-4 md:p-8">
       <div className="max-w-[1600px] mx-auto space-y-6">
-        
         {/* Header */}
         <header className="sticky top-0 md:top-4 z-[90] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/90 backdrop-blur-lg p-4 rounded-xl shadow-sm border border-gray-100/50">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Copilot Data Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">Real-time marketing performance & user insights</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Real-time marketing performance & user insights
+            </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <GlobalRegionPicker />
             <CLevelTimePicker />
-            <button 
+            <button
               onClick={() => setIsAlertDrawerOpen(true)}
               className="relative p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             >
@@ -43,7 +44,7 @@ function DashboardContent() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 border-2 border-white"></span>
               </span>
             </button>
-            <button 
+            <button
               onClick={() => setIsAIModalOpen(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
@@ -99,7 +100,6 @@ function DashboardContent() {
             <MarketCommand />
           </div>
         </section>
-
       </div>
 
       <AIDiagnosticModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />

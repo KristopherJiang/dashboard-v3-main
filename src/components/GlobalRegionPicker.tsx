@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Globe, ChevronDown, MapPin, Check, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useDashboardContext, RegionKey } from '../lib/DashboardContext';
+import type { RegionKey } from '../lib/DashboardContext';
+import { useDashboardContext } from '../lib/DashboardContext';
 
 // Define regions and countries structure based on the provided explicit data
 const REGION_STRUCTURE = [
   {
     id: 'Global',
     label: 'Global',
-    countries: [{ id: 'GLOBAL', name: '全球聚合视角', en: 'Worldwide' }]
+    countries: [{ id: 'GLOBAL', name: '全球聚合视角', en: 'Worldwide' }],
   },
   {
     id: 'Asia',
@@ -33,7 +34,7 @@ const REGION_STRUCTURE = [
       { id: 'ASIA_TM', name: '土库曼斯坦', en: 'Turkmenistan' },
       { id: 'ASIA_KG', name: '吉尔吉斯斯坦', en: 'Kyrgyzstan' },
       { id: 'ASIA_TW', name: '中国台湾', en: 'Taiwan' },
-    ]
+    ],
   },
   {
     id: 'EU',
@@ -63,7 +64,7 @@ const REGION_STRUCTURE = [
       { id: 'EU_EE', name: '爱沙尼亚', en: 'Estonia' },
       { id: 'EU_HR', name: '克罗地亚', en: 'Croatia' },
       { id: 'EU_LU', name: '卢森堡', en: 'Luxembourg' },
-    ]
+    ],
   },
   {
     id: 'Latam',
@@ -77,7 +78,7 @@ const REGION_STRUCTURE = [
       { id: 'LATAM_PE', name: '秘鲁', en: 'Peru' },
       { id: 'LATAM_CL', name: '智利', en: 'Chile' },
       { id: 'LATAM_BO', name: '玻利维亚', en: 'Bolivia' },
-    ]
+    ],
   },
   {
     id: 'Mena',
@@ -94,7 +95,7 @@ const REGION_STRUCTURE = [
       { id: 'MENA_DZ', name: '阿尔及利亚', en: 'Algeria' },
       { id: 'MENA_TR', name: '土耳其', en: 'Turkey' },
       { id: 'MENA_OM', name: '阿曼', en: 'Oman' },
-    ]
+    ],
   },
   {
     id: 'Africa',
@@ -105,7 +106,7 @@ const REGION_STRUCTURE = [
       { id: 'AFRICA_KE', name: '肯尼亚', en: 'Kenya' },
       { id: 'AFRICA_GH', name: '加纳', en: 'Ghana' },
       { id: 'AFRICA_UG', name: '乌干达', en: 'Uganda' },
-    ]
+    ],
   },
   {
     id: 'GS-Others',
@@ -113,9 +114,9 @@ const REGION_STRUCTURE = [
     countries: [
       { id: 'GS_PF', name: '法属波利尼西亚', en: 'French Polynesia' },
       { id: 'GS_AU', name: '澳大利亚', en: 'Australia', isHot: true },
-      { id: 'GS_NZ', name: '新西兰', en: 'New Zealand' }
-    ]
-  }
+      { id: 'GS_NZ', name: '新西兰', en: 'New Zealand' },
+    ],
+  },
 ];
 
 // Focus targets exclusively based on red text logic
@@ -136,7 +137,7 @@ const GlobalRegionPicker = () => {
   // Helper to find the current label
   const getCurrentLabel = () => {
     for (const r of REGION_STRUCTURE) {
-      const c = r.countries.find(c => c.id === selectedRegion);
+      const c = r.countries.find((c) => c.id === selectedRegion);
       if (c) return c.name === '全球聚合视角' ? 'Global' : c.name;
     }
     return 'Global';
@@ -152,7 +153,7 @@ const GlobalRegionPicker = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const activeRegionData = REGION_STRUCTURE.find(r => r.id === activeTab) || REGION_STRUCTURE[1];
+  const activeRegionData = REGION_STRUCTURE.find((r) => r.id === activeTab) || REGION_STRUCTURE[1];
 
   return (
     <div className="relative" ref={containerRef}>
@@ -165,10 +166,14 @@ const GlobalRegionPicker = () => {
           <MapPin className="w-4 h-4 text-gray-500" />
         </div>
         <div className="flex flex-col items-start leading-tight">
-          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-black">地区维度</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-black">
+            地区维度
+          </span>
           <span className="text-[13px]">{getCurrentLabel()}</span>
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* Popover */}
@@ -197,18 +202,22 @@ const GlobalRegionPicker = () => {
                       setIsOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
-                      selectedRegion === fav.id 
-                      ? 'bg-gray-900 text-white shadow-lg' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                      selectedRegion === fav.id
+                        ? 'bg-gray-900 text-white shadow-lg'
+                        : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex flex-col items-start leading-none relative w-full">
                       <div className="flex items-center justify-between w-full">
                         <span className="text-xs font-bold">{fav.label}</span>
-                        {selectedRegion === fav.id && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                        {selectedRegion === fav.id && (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        )}
                       </div>
                       <div className="flex items-center gap-1 mt-1">
-                        <span className={`text-[8px] uppercase tracking-tighter ${selectedRegion === fav.id ? 'text-gray-300' : 'text-gray-400'}`}>
+                        <span
+                          className={`text-[8px] uppercase tracking-tighter ${selectedRegion === fav.id ? 'text-gray-300' : 'text-gray-400'}`}
+                        >
                           {fav.sub}
                         </span>
                         {fav.isHot && !selectedRegion && (
@@ -232,86 +241,99 @@ const GlobalRegionPicker = () => {
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                {REGION_STRUCTURE.map(r => {
+                {REGION_STRUCTURE.map((r) => {
                   const isCurrentTab = activeTab === r.id;
                   const isGlobalSelected = r.id === 'Global' && selectedRegion === 'GLOBAL';
-                  
+
                   return (
-                    <button 
-                       key={r.id}
-                       onMouseEnter={() => setActiveTab(r.id)}
-                       onClick={() => {
-                           setActiveTab(r.id);
-                           // Special case: Global is a valid selection, but others are just tabs
-                           if (r.id === 'Global') {
-                               setSelectedRegion('GLOBAL');
-                               setIsOpen(false);
-                           }
-                       }}
-                       className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                         isGlobalSelected
-                         ? 'bg-gray-900 text-white shadow-md' 
-                         : isCurrentTab 
-                           ? 'bg-indigo-50 text-indigo-700' 
-                           : 'text-gray-700 hover:bg-gray-50'
-                       }`}
+                    <button
+                      key={r.id}
+                      onMouseEnter={() => setActiveTab(r.id)}
+                      onClick={() => {
+                        setActiveTab(r.id);
+                        // Special case: Global is a valid selection, but others are just tabs
+                        if (r.id === 'Global') {
+                          setSelectedRegion('GLOBAL');
+                          setIsOpen(false);
+                        }
+                      }}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                        isGlobalSelected
+                          ? 'bg-gray-900 text-white shadow-md'
+                          : isCurrentTab
+                            ? 'bg-indigo-50 text-indigo-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
-                       <span className="flex items-center gap-2">
-                         {r.label}
-                         {isGlobalSelected && <Check size={12} className="text-emerald-400" />}
-                       </span>
-                       <ChevronRight size={14} className={`transition-opacity ${isGlobalSelected ? 'opacity-0' : isCurrentTab ? 'opacity-100 text-indigo-400' : 'opacity-0'}`} />
+                      <span className="flex items-center gap-2">
+                        {r.label}
+                        {isGlobalSelected && <Check size={12} className="text-emerald-400" />}
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        className={`transition-opacity ${isGlobalSelected ? 'opacity-0' : isCurrentTab ? 'opacity-100 text-indigo-400' : 'opacity-0'}`}
+                      />
                     </button>
                   );
                 })}
-            </div>
+              </div>
             </div>
 
             {/* Column 3: Countries Grid (Tier 2) */}
             <div className="flex-1 p-5 overflow-y-auto custom-scrollbar bg-slate-50/30">
               {activeTab === 'Global' ? (
-                 <div className="h-full flex flex-col items-center justify-center text-center opacity-80 pt-10">
-                    <Globe size={48} className="text-gray-300 mb-4" />
-                    <h3 className="text-lg font-black text-gray-800">全域聚合视角</h3>
-                    <p className="text-xs text-gray-500 mt-2 max-w-[200px]">点击即可直接选中全球数据作为汇总参考盘。</p>
-                 </div>
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-80 pt-10">
+                  <Globe size={48} className="text-gray-300 mb-4" />
+                  <h3 className="text-lg font-black text-gray-800">全域聚合视角</h3>
+                  <p className="text-xs text-gray-500 mt-2 max-w-[200px]">
+                    点击即可直接选中全球数据作为汇总参考盘。
+                  </p>
+                </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-2">
-                     <h4 className="text-sm font-black tracking-tight text-gray-900 border-b-2 border-indigo-500 pb-2 -mb-[9px]">{activeRegionData.label} 地区</h4>
-                     <span className="text-xs text-gray-400 font-medium">共 {activeRegionData.countries.length} 个地区</span>
+                    <h4 className="text-sm font-black tracking-tight text-gray-900 border-b-2 border-indigo-500 pb-2 -mb-[9px]">
+                      {activeRegionData.label} 地区
+                    </h4>
+                    <span className="text-xs text-gray-400 font-medium">
+                      共 {activeRegionData.countries.length} 个地区
+                    </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
-                     {activeRegionData.countries.map(country => {
-                       const isActive = selectedRegion === country.id;
-                       return (
-                         <button
-                           key={country.id}
-                           onClick={() => {
-                               setSelectedRegion(country.id as RegionKey);
-                               setIsOpen(false);
-                           }}
-                           className={`relative flex flex-col items-start p-2.5 rounded-xl text-left transition-all border ${
-                             isActive 
-                             ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
-                             : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                           }`}
-                         >
-                           <span className={`text-xs font-bold leading-none ${isActive ? 'text-indigo-700' : 'text-gray-700'}`}>
-                             {country.name}
-                           </span>
-                           <span className={`text-[9px] mt-1 tracking-tight ${isActive ? 'text-indigo-400' : 'text-gray-400'}`}>
-                             {country.en}
-                           </span>
-                           {isActive && (
-                               <div className="absolute top-2 right-2 flex items-center justify-center w-3.5 h-3.5 bg-indigo-600 rounded-full">
-                                   <Check size={8} className="text-white" strokeWidth={4} />
-                               </div>
-                           )}
-                         </button>
-                       );
-                     })}
+                    {activeRegionData.countries.map((country) => {
+                      const isActive = selectedRegion === country.id;
+                      return (
+                        <button
+                          key={country.id}
+                          onClick={() => {
+                            setSelectedRegion(country.id as RegionKey);
+                            setIsOpen(false);
+                          }}
+                          className={`relative flex flex-col items-start p-2.5 rounded-xl text-left transition-all border ${
+                            isActive
+                              ? 'bg-indigo-50 border-indigo-200 shadow-sm'
+                              : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                          }`}
+                        >
+                          <span
+                            className={`text-xs font-bold leading-none ${isActive ? 'text-indigo-700' : 'text-gray-700'}`}
+                          >
+                            {country.name}
+                          </span>
+                          <span
+                            className={`text-[9px] mt-1 tracking-tight ${isActive ? 'text-indigo-400' : 'text-gray-400'}`}
+                          >
+                            {country.en}
+                          </span>
+                          {isActive && (
+                            <div className="absolute top-2 right-2 flex items-center justify-center w-3.5 h-3.5 bg-indigo-600 rounded-full">
+                              <Check size={8} className="text-white" strokeWidth={4} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
