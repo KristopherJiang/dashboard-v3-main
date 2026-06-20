@@ -17,13 +17,37 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { useDashboardContext } from '../lib/DashboardContext';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchChannels, type ChannelNode } from '../lib/api';
+import { ApiError, SkeletonLoader } from './shared/ApiStates';
 
 const ChannelEfficiencyMatrix = () => {
   const [expandedRows, setExpandedRows] = useState(['retail', 'paid_ads']);
   const { timeRange, selectedRegion } = useDashboardContext();
+  const { data: channelsData, loading: channelsLoading, error: channelsError } = useApi(fetchChannels);
 
-  // Get dynamic time/region multipliers to sync with Sunburst
-  const getMultiplier = () => {
+  // 将 API 返回的 ChannelNode 树结构映射为组件内部使用的行数据格式
+  const mapChannelToRow = (node: ChannelNode, level: number): any => ({
+    id: node.id,
+    channel: node.name,
+    level,
+    newUsers: node.metrics.newUsers,
+    spend: node.metrics.spend,
+    signup: node.metrics.signupCAC,
+    kyc: node.metrics.kycCAC,
+    ftd: node.metrics.ftdCAC,
+    ftt: node.metrics.fttCAC,
+    roi: node.metrics.roi,
+    ltv: node.metrics.ltv,
+    children: node.children?.map((c) => mapChannelToRow(c, level + 1)),
+  });
+
+  // 1. 模拟数据模型 - 引入动态新增用户数 (New Users) 保持同频
+  const hierarchicalData = useMemo(() => {
+    if (channelsData?.channels) {
+      return channelsData.channels.map((c) => mapChannelToRow(c, 1));
+    }
+    // Fallback to original hardcoded data generation
     const timeScale =
       {
         today: 0.03,
@@ -44,18 +68,11 @@ const ChannelEfficiencyMatrix = () => {
       MENA_AE: 0.08,
       GS_AU: 0.06,
     };
-    const globalRegionScale = rScale[selectedRegion] || 0.04;
+    const regionScale = rScale[selectedRegion] || 0.04;
 
-    return timeScale * globalRegionScale;
-  };
-
-  // Base total users (same baseline as Sunburst)
-  const baseTotalUsers = 11250;
-  const m = getMultiplier();
-  const currentTotalNewUsers = Math.round(baseTotalUsers * m);
-
-  // 1. 模拟数据模型 - 引入动态新增用户数 (New Users) 保持同频
-  const hierarchicalData = useMemo(() => {
+    const m = timeScale * regionScale;
+    const baseTotalUsers = 11250;
+    const currentTotalNewUsers = Math.round(baseTotalUsers * m);
     // 基础比例 (匹配 Sunburst): Retail: 66%, IB: 34%
     // Retail 子项比例 (占全局): Paid: 0.66 * 0.22 = 14.52%, KOL: 0.66 * 0.18 = 11.88%, Organic: 0.66 * 0.16 = 10.56%, RAF: 0.66 * 0.10 = 6.6%
 
@@ -226,7 +243,7 @@ const ChannelEfficiencyMatrix = () => {
         ],
       },
     ];
-  }, [currentTotalNewUsers, selectedRegion]);
+  }, [channelsData, timeRange, selectedRegion]);
 
   const flattenedData = useMemo(() => {
     const result: typeof hierarchicalData = [];

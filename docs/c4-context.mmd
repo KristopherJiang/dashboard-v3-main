@@ -1,0 +1,24 @@
+C4Context
+    title Dashboard V3 — 系统上下文图 (System Context)
+
+    Person(user, "C-Level 管理层", "Exness / Vantage 的高管团队<br/>查看营销数据、渠道ROI、AI诊断报告")
+
+    Enterprise_Boundary(b0, "Dashboard V3 系统边界") {
+        System(dashboard, "Dashboard V3", "PC 端营销数据 Dashboard<br/>提供 KPI、渠道分析、用户分布、<br/>舆情监测、AI 告警与诊断")
+
+        System_Ext(sensorTower, "Sensor Tower API", "第三方应用市场情报<br/>下载量、评分、竞品数据")
+
+        System_Ext(gemini, "Google Gemini", "AI 服务<br/>智能告警生成、<br/>深度战略诊断报告")
+
+        System_Ext(seoApi, "SEO / ASO 平台", "Semrush / AppTweak<br/>关键词排名、搜索可见度、<br/>品牌曝光度数据")
+
+        System_Ext(monitoring, "全球监控节点", "10 个核心骨干节点<br/>网络延迟、丢包率、<br/>App 上架状态监测")
+    }
+
+    Rel(user, dashboard, "查看营销数据、接收AI告警", "HTTPS")
+    Rel(dashboard, sensorTower, "获取下载量与竞品数据", "REST API / HTTPS")
+    Rel(dashboard, gemini, "发送KPI数据进行AI分析", "REST API / HTTPS")
+    Rel(dashboard, seoApi, "获取SEO/GEO/ASO指标", "REST API / HTTPS")
+    Rel(dashboard, monitoring, "采集全球节点健康状态", "REST API / HTTPS")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

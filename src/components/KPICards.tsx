@@ -17,8 +17,12 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from 'recharts';
+import { useDashboardContext } from '../lib/DashboardContext';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchKPI, type KPICard } from '../lib/api';
+import { SkeletonCard, ApiError } from './shared/ApiStates';
 
-// --- Data Definitions ---
+// --- Data Definitions (保留用于 fallback 或图表形状参考) ---
 
 const dataA = [
   { month: 'J', value: 20, previous: 18 },
@@ -617,14 +621,86 @@ const RetentionChart = ({ data }: { data: any[] }) => {
   );
 };
 
-// --- Main Component ---
-import { useDashboardContext } from '../lib/DashboardContext';
-
 const renderShortDate = (d: Date) =>
   `${d.getFullYear()}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getDate().toString().padStart(2, '0')}`;
 
+/** 从 API chartData 转换为组件内部使用的趋势数据格式 */
+function chartDataToTrendA2(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    current: p.current,
+    lastMonth: p.previous,
+    lastYear: Math.round(p.previous * 0.88),
+  }));
+}
+
+function chartDataToTrendB(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    value: p.current,
+    lastMonth: p.previous,
+    lastYear: Math.round(p.previous * 0.9),
+    okr: Math.round(p.current * 1.05),
+    isUp: p.current >= p.previous,
+  }));
+}
+
+function chartDataToTrendC(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    actual: p.current,
+    lastMonth: p.previous,
+    lastYear: Math.round(p.previous * 0.88),
+    predict: null,
+    barValue: p.current,
+  }));
+}
+
+function chartDataToTrendRetention(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    d7: Number((p.current * 2.9).toFixed(1)),
+    d30: Number((p.current * 0.95).toFixed(1)),
+    d7LastYear: Number((p.previous * 2.8).toFixed(1)),
+    d30LastYear: Number((p.previous * 0.85).toFixed(1)),
+  }));
+}
+
+function chartDataToTrendConversion(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    current: p.current,
+    lastMonth: p.previous,
+    lastYear: Math.round(p.previous * 0.92),
+    target: Math.round(p.current * 1.1),
+  }));
+}
+
+function chartDataToConversion2(points: { month: string; current: number; previous: number }[]) {
+  return points.map((p) => ({
+    month: p.month,
+    current: p.current,
+    lastMonth: p.previous,
+    lastYear: Math.round(p.previous * 0.95),
+    target: Math.round(p.current * 1.15),
+  }));
+}
+
+/** 从 API 卡片中提取趋势百分比字符串 */
+function getTrendFromCard(card: KPICard): { value1: string; value2: string } {
+  return { value1: card.trendPoP, value2: card.trendYoY };
+}
+
+/** 按 key 从 API cards 中查找对应卡片 */
+function findCard(cards: KPICard[], key: string): KPICard | undefined {
+  return cards.find((c) => c.key === key);
+}
+
 export default function KPICards() {
   const { timeRange, selectedRegion, customDateRange } = useDashboardContext();
+
+  // API 数据请求
+  const { data: kpiData, loading: kpiLoading, error: kpiError } = useApi(fetchKPI);
 
   const timeCtx = React.useMemo(() => {
     const TODAY = new Date();
@@ -716,7 +792,6 @@ export default function KPICards() {
 
   const remapChartData = React.useCallback(
     (baseData: any[]) => {
-      // 动态计算该维度下应当显示的数据点数量
       let pointCount = baseData.length;
       if (timeCtx.granularity === 'daily') {
         pointCount = Math.min(Math.max(timeCtx.diffDays, 7), 14);
@@ -726,7 +801,6 @@ export default function KPICards() {
         pointCount = 12;
       }
 
-      // 截取数据并生成新的标签
       return baseData.slice(-pointCount).map((d, index) => {
         let newLabel = d.month;
         let fullRange = '';
@@ -756,56 +830,94 @@ export default function KPICards() {
     [timeCtx],
   );
 
-  const dynDataA2 = React.useMemo(() => remapChartData(dataA2), [remapChartData]);
-  const dynDataB = React.useMemo(() => remapChartData(dataB), [remapChartData]);
-  const dynDataC = React.useMemo(() => remapChartData(dataC), [remapChartData]);
-  const dynDataConversion1 = React.useMemo(() => remapChartData(dataConversion1), [remapChartData]);
-  const dynDataConversion2 = React.useMemo(() => remapChartData(dataConversion2), [remapChartData]);
-  const dynDataRetentionMonthly = React.useMemo(
-    () => remapChartData(dataRetentionMonthly),
-    [remapChartData],
-  );
+  // 当 API 数据可用时从中提取值，否则使用 fallback 硬编码值
+  const cards = kpiData?.cards || [];
+  const regCard = findCard(cards, 'registrationUsers');
+  const ftdCard = findCard(cards, 'ftdUsers');
+  const fttCard = findCard(cards, 'fttUsers');
+  const depCard = findCard(cards, 'netDeposit');
+  const volCard = findCard(cards, 'tradingVolume');
+  const cv1Card = findCard(cards, 'signupToFtdCVR');
+  const cv2Card = findCard(cards, 'ftdToFttCVR');
+  const retCard = findCard(cards, 'd30Retention');
 
-  // Dynamic scale multiplier for demonstration of time dimension changes
-  const timeScale =
-    {
-      today: 0.03,
-      yesterday: 0.035,
-      thisWeek: 0.21,
-      mtd: 1.0,
-      lastMonth: 0.95,
-      ytd: 4.8,
-      last90: 2.9,
-      custom: 1.2,
-    }[timeRange] || 1.0;
+  // 从 API chartData 生成图表数据（若 API 未返回则 fallback）
+  const dynDataA2 = regCard
+    ? chartDataToTrendA2(regCard.chartData)
+    : React.useMemo(() => remapChartData(dataA2), [remapChartData]);
+  const dynDataB = ftdCard
+    ? chartDataToTrendB(ftdCard.chartData)
+    : React.useMemo(() => remapChartData(dataB), [remapChartData]);
+  const dynDataC = volCard
+    ? chartDataToTrendC(volCard.chartData)
+    : React.useMemo(() => remapChartData(dataC), [remapChartData]);
+  const dynDataConversion1 = cv1Card
+    ? chartDataToTrendConversion(cv1Card.chartData)
+    : React.useMemo(() => remapChartData(dataConversion1), [remapChartData]);
+  const dynDataConversion2 = cv2Card
+    ? chartDataToConversion2(cv2Card.chartData)
+    : React.useMemo(() => remapChartData(dataConversion2), [remapChartData]);
+  const dynDataRetentionMonthly = retCard
+    ? chartDataToTrendRetention(retCard.chartData)
+    : React.useMemo(() => remapChartData(dataRetentionMonthly), [remapChartData]);
 
-  const rScale: Record<string, number> = {
-    GLOBAL: 1.0,
-    ASIA_VN: 0.15,
-    EU_UK: 0.12,
-    ASIA_IN: 0.2,
-    MENA_AE: 0.08,
-    GS_AU: 0.06,
-  };
-  const regionScale = rScale[selectedRegion] || 0.04;
+  // 趋势数据：从 API 读取或 fallback 到原有计算
+  const trendA = regCard
+    ? getTrendFromCard(regCard)
+    : getTrendConfig(timeCtx, 9.4);
+  const trendFTD = ftdCard
+    ? getTrendFromCard(ftdCard)
+    : getTrendConfig(timeCtx, 12.2);
+  const trendFTT = fttCard
+    ? getTrendFromCard(fttCard)
+    : getTrendConfig(timeCtx, 15.6);
+  const trendDep = depCard
+    ? getTrendFromCard(depCard)
+    : getTrendConfig(timeCtx, 23.3);
+  const trendVol = volCard
+    ? getTrendFromCard(volCard)
+    : getTrendConfig(timeCtx, 25.6);
+  const trendConv1 = cv1Card
+    ? getTrendFromCard(cv1Card)
+    : getTrendConfig(timeCtx, 2.4);
+  const trendConv2 = cv2Card
+    ? getTrendFromCard(cv2Card)
+    : getTrendConfig(timeCtx, 1.8);
+  const trendRet = retCard
+    ? getTrendFromCard(retCard)
+    : getTrendConfig(timeCtx, 1.2);
 
-  const m = timeScale * regionScale;
+  // 核心数值：从 API 读取或 fallback
+  const regVal = regCard?.value ?? Math.floor(12480 * m).toLocaleString();
+  const ftdVal = ftdCard?.value ?? Math.floor(2995 * m).toLocaleString();
+  const fttVal = fttCard?.value ?? Math.floor(1497 * m).toLocaleString();
+  const depVal = depCard?.value ?? `$${Math.floor(1542060 * m).toLocaleString()}`;
+  const volVal = volCard?.value ?? `$${Math.floor(15420600 * m).toLocaleString()}`;
+  const cv1Val = cv1Card?.value ?? '24.0%';
+  const cv2Val = cv2Card?.value ?? '50.0%';
+  const retVal = retCard?.value ?? '20.0%';
 
-  const trendA = getTrendConfig(timeCtx, 9.4);
-  const trendFTD = getTrendConfig(timeCtx, 12.2);
-  const trendFTT = getTrendConfig(timeCtx, 15.6);
-  const trendDep = getTrendConfig(timeCtx, 23.3);
-  const trendVol = getTrendConfig(timeCtx, 25.6);
-  const trendConv1 = getTrendConfig(timeCtx, 2.4);
-  const trendConv2 = getTrendConfig(timeCtx, 1.8);
-  const trendRet = getTrendConfig(timeCtx, 1.2);
+  // Loading / Error 状态
+  if (kpiLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  if (kpiError) {
+    return <ApiError message={kpiError} />;
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
       {/* 1. 注册人数 */}
       <CardWrapper>
         <CardHeader title="注册人数" />
-        <CardValue value={Math.floor(12480 * m).toLocaleString()} {...trendA} />
+        <CardValue value={regVal} {...trendA} />
         <div className="flex justify-between items-center mb-2 px-1">
           <span className="text-[10px] text-gray-400 font-medium">{timeCtx.subTitle}</span>
         </div>
@@ -844,7 +956,7 @@ export default function KPICards() {
       {/* 2. FTD人数 */}
       <CardWrapper>
         <CardHeader title="FTD人数" />
-        <CardValue value={Math.floor(2995 * m).toLocaleString()} {...trendFTD} />
+        <CardValue value={ftdVal} {...trendFTD} />
         <div className="flex justify-between items-center mb-2 px-1">
           <span className="text-[10px] text-gray-400 font-medium">{timeCtx.subTitle}</span>
         </div>
@@ -883,7 +995,7 @@ export default function KPICards() {
       {/* 3. FTT人数 */}
       <CardWrapper>
         <CardHeader title="FTT人数" />
-        <CardValue value={Math.floor(1497 * m).toLocaleString()} {...trendFTT} />
+        <CardValue value={fttVal} {...trendFTT} />
         <div className="flex justify-between items-center mb-2 px-1">
           <span className="text-[10px] text-gray-400 font-medium">{timeCtx.subTitle}</span>
         </div>
@@ -922,7 +1034,7 @@ export default function KPICards() {
       {/* 4. Net Deposit */}
       <CardWrapper>
         <CardHeader title="Net Deposit (净入金)" />
-        <CardValue value={`$${Math.floor(1542060 * m).toLocaleString()}`} {...trendDep} />
+        <CardValue value={depVal} {...trendDep} />
         <div className="flex justify-between items-center px-1">
           <span className="text-[10px] text-gray-400 font-medium tracking-tight">
             {timeCtx.subTitle} (出金/入金对比)
@@ -945,7 +1057,7 @@ export default function KPICards() {
         {/* 保真数值与标签排版 */}
         <div className="mb-4">
           <div className="text-3xl font-black text-[#1a1f2e] tracking-tighter mb-2">
-            ${Math.floor(15420600 * m).toLocaleString()}
+            {volVal}
           </div>
           <div className="flex items-center gap-3 text-[11px] font-bold">
             <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-400">
@@ -1020,7 +1132,7 @@ export default function KPICards() {
                 注册用户中完成首次入金的比例
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">24.0%</div>
+            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">{cv1Val}</div>
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-3">
               <span className="px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-50">
                 {timeCtx.label1} {trendConv1.value1}
@@ -1044,7 +1156,7 @@ export default function KPICards() {
                 <span className="text-[9px] font-black uppercase tracking-wider">注册人数</span>
               </div>
               <span className="text-sm font-black text-slate-800">
-                {Math.floor(12480 * m).toLocaleString()}
+                {regVal}
               </span>
             </div>
             <div className="my-1.5 text-slate-300">
@@ -1056,7 +1168,7 @@ export default function KPICards() {
                 <span className="text-[9px] font-black uppercase tracking-wider">FTD人数</span>
               </div>
               <span className="text-sm font-black text-slate-800">
-                {Math.floor(2995 * m).toLocaleString()}
+                {ftdVal}
               </span>
             </div>
           </div>
@@ -1120,7 +1232,7 @@ export default function KPICards() {
                 首次入金用户中完成首次交易的比例
               </div>
             </div>
-            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">50.0%</div>
+            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">{cv2Val}</div>
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-2">
               <span className="px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-50">
                 {timeCtx.label1} {trendConv2.value1}
@@ -1144,7 +1256,7 @@ export default function KPICards() {
                 <span className="text-[9px] font-black uppercase tracking-wider">FTD人数</span>
               </div>
               <span className="text-sm font-black text-slate-800">
-                {Math.floor(2995 * m).toLocaleString()}
+                {ftdVal}
               </span>
             </div>
             <div className="my-1.5 text-slate-300">
@@ -1156,7 +1268,7 @@ export default function KPICards() {
                 <span className="text-[9px] font-black uppercase tracking-wider">FTT人数</span>
               </div>
               <span className="text-sm font-black text-slate-800">
-                {Math.floor(1497 * m).toLocaleString()}
+                {fttVal}
               </span>
             </div>
           </div>
@@ -1216,7 +1328,7 @@ export default function KPICards() {
             <div className="flex items-center gap-1.5 text-gray-500 mb-2">
               <span className="text-sm font-medium">FTT后 D30 留存率</span>
             </div>
-            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">20.0%</div>
+            <div className="text-3xl font-bold text-gray-900 tracking-tight mb-2">{retVal}</div>
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-2">
               <span className="px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-50">
                 {timeCtx.label1} {trendRet.value1}

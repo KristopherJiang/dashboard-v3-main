@@ -13,6 +13,9 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useDashboardContext } from '../lib/DashboardContext';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchUserDistribution, type DistributionNode } from '../lib/api';
+import { ApiError, SkeletonLoader } from './shared/ApiStates';
 
 const UserDistributionSunburst = () => {
   const [localRegion, setLocalRegion] = useState('Global');

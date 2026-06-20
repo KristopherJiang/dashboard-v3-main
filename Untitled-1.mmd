@@ -1,0 +1,71 @@
+---
+references:
+  - "File: /src/server/routes/marketing-roi.routes.ts"
+generationTime: 2026-06-19T14:48:42.669Z
+---
+sequenceDiagram
+    %% Participants
+    participant Client
+    participant Router as marketingRoiRouter
+    participant Cache as cacheMiddleware
+    participant DateUtil as getDateRange
+    participant Service as marketingRoiService
+    participant DB as Database
+    participant RespUtil as successResponse
+    participant Res as Response
+
+    %% Client request enters router
+    Client->>Router: GET /api/v1/marketing/roi?...
+    activate Router
+
+    %% Cache check (activated before conditional)
+    Router->>Cache: cacheMiddleware(300) check
+    activate Cache
+    alt cache hit
+        Cache-->>Router: return cachedData
+    else cache miss
+        Cache-->>Router: cache miss -> proceed
+    end
+    deactivate Cache
+
+    %% Parse & validate query (zod)
+    Router->>Router: Parse & validate query (zod)
+
+    %% Activate shared participants before conditional flows (MANDATORY: activations outside alt)
+    activate RespUtil
+    activate Res
+    activate DateUtil
+    activate Service
+    activate DB
+
+    %% Conditional: validation error vs success
+    alt validation error
+        Router->>Res: res.status(400).json({ error })
+        Res-->>Client: 400 Bad Request
+    else valid request
+        %% Compute date range
+        Router->>DateUtil: getDateRange(timeRange,startDate,endDate)
+        DateUtil-->>Router: { startDate, endDate }
+
+        %% Retrieve marketing ROI data
+        Router->>Service: getMarketingRoiData(timeRange, region)
+        Service->>DB: Query marketing ROI data
+        DB-->>Service: data
+        Service-->>Router: data
+
+        %% Format success response and send
+        Router->>RespUtil: successResponse(data, meta)
+        RespUtil-->>Router: responseBody
+
+        Router->>Res: res.json(responseBody)
+        Res-->>Client: 200 OK JSON
+    end
+
+    %% Deactivate all participants after conditional blocks (ONE deactivate per activate)
+    deactivate DB
+    deactivate Service
+    deactivate DateUtil
+    deactivate RespUtil
+    deactivate Res
+
+    deactivate Router

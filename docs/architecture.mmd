@@ -1,0 +1,160 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#6366f1', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#818cf8', 'lineColor': '#94a3b8', 'secondaryColor': '#1e293b', 'tertiaryColor': '#0f172a', 'background': '#0f172a', 'mainBkg': '#1e293b', 'nodeBorder': '#818cf8', 'clusterBkg': '#1e293b', 'clusterBorder': '#334155', 'edgeLabelBackground': '#1e293b'}}}%%
+
+graph TB
+    subgraph CLIENT["🌐 Client Layer"]
+        Browser["PC Browser<br/><i>Chrome / Edge / Safari</i>"]
+        SPA["React 19 SPA<br/><i>Vite 6 + Tailwind 4</i>"]
+        Charts["Recharts 3<br/><i>14 Dashboard Components</i>"]
+        State["DashboardContext<br/><i>timeRange × region</i>"]
+    end
+
+    subgraph API["⚡ API Gateway Layer"]
+        Express["Express 5 Server<br/><i>Port 3000</i>"]
+        Middleware["Middleware Stack"]
+        subgraph MW["Middleware"]
+            CORS["CORS"]
+            RateLimit["Rate Limiter<br/><i>100 req/min/IP</i>"]
+            Validate["Zod Validation"]
+            ErrorHandler["Error Handler"]
+            Logger["Pino Logger"]
+        end
+    end
+
+    subgraph ROUTES["🛣️ Route Layer"]
+        R_KPI["/api/v1/kpi"]
+        R_Channel["/api/v1/channels"]
+        R_User["/api/v1/users/*"]
+        R_Funnel["/api/v1/funnel"]
+        R_Rep["/api/v1/reputation"]
+        R_App["/api/v1/app-market"]
+        R_Health["/api/v1/health"]
+        R_Intel["/api/v1/market-intelligence"]
+        R_AI["/api/v1/ai/*"]
+        R_ASO["/api/v1/aso"]
+        R_Mkt["/api/v1/marketing/*"]
+        R_ST["/api/sensortower/*"]
+    end
+
+    subgraph SERVICES["⚙️ Service Layer"]
+        S_KPI["KPI Service<br/><i>8 metric calculators</i>"]
+        S_Channel["Channel Service<br/><i>Hierarchical tree builder</i>"]
+        S_User["User Service<br/><i>Distribution + Demographics</i>"]
+        S_Funnel["Funnel Service<br/><i>7-step conversion chain</i>"]
+        S_Rep["Reputation Service<br/><i>NLP sentiment analysis</i>"]
+        S_App["App Market Service<br/><i>Sensor Tower integration</i>"]
+        S_Health["Health Service<br/><i>10-node latency monitor</i>"]
+        S_Intel["Intelligence Service<br/><i>SEO + GEO + ASO</i>"]
+        S_AI["AI Service<br/><i>Gemini integration</i>"]
+    end
+
+    subgraph DATA["💾 Data Layer"]
+        subgraph SCALES["📊 Scaling Engine"]
+            TS["TIME_SCALE<br/><i>8 time ranges</i>"]
+            RS["REGION_SCALE<br/><i>6 regions</i>"]
+            CS["COST_SCALE<br/><i>6 cost zones</i>"]
+            Multiplier["getMultiplier()<br/><i>time × region</i>"]
+        end
+        Prisma["Prisma 6 ORM<br/><i>8 data models</i>"]
+        PG[("PostgreSQL 16<br/><i>Primary Store</i>")]
+        Redis[("Redis 7<br/><i>Multi-TTL Cache</i>")]
+    end
+
+    subgraph EXTERNAL["🔌 External APIs"]
+        ST["Sensor Tower API<br/><i>Downloads + Revenue</i>"]
+        Gemini["Google Gemini<br/><i>AI Diagnostics</i>"]
+        Semrush["Semrush API<br/><i>SEO + Keywords</i>"]
+    end
+
+    subgraph INFRA["🏗️ Infrastructure"]
+        subgraph DEV["Development"]
+            ViteDev["Vite Dev Server<br/><i>HMR + Middleware Mode</i>"]
+            Vitest["Vitest<br/><i>Unit + Integration</i>"]
+            MSW["MSW<br/><i>API Mocking</i>"]
+        end
+        subgraph CI["CI/CD"]
+            GH["GitHub Actions<br/><i>typecheck + lint + test + build</i>"]
+            Husky["Husky + lint-staged<br/><i>Pre-commit Hooks</i>"]
+        end
+        subgraph DEPLOY["Deployment"]
+            Vercel["Vercel<br/><i>Frontend CDN</i>"]
+            Railway["Railway<br/><i>Backend Hosting</i>"]
+            Supabase[("Supabase<br/><i>Managed PostgreSQL</i>")]
+            Upstash[("Upstash<br/><i>Serverless Redis</i>")]
+        end
+    end
+
+    %% Client → API
+    Browser --> SPA
+    SPA --> Charts
+    SPA --> State
+    SPA -->|"REST API /api/*"| Express
+
+    %% API Gateway
+    Express --> Middleware
+    Middleware --> CORS --> RateLimit --> Validate --> ErrorHandler --> Logger
+
+    %% Routes → Services
+    Express --> ROUTES
+    R_KPI --> S_KPI
+    R_Channel --> S_Channel
+    R_User --> S_User
+    R_Funnel --> S_Funnel
+    R_Rep --> S_Rep
+    R_App --> S_App
+    R_Health --> S_Health
+    R_Intel --> S_Intel
+    R_AI --> S_AI
+    R_ASO --> S_Intel
+    R_Mkt --> S_KPI
+    R_ST --> S_App
+
+    %% Services → Data
+    S_KPI --> SCALES
+    S_Channel --> SCALES
+    S_User --> SCALES
+    S_Funnel --> SCALES
+    TS --> Multiplier
+    RS --> Multiplier
+    CS --> Multiplier
+
+    S_KPI --> Prisma
+    S_Channel --> Prisma
+    S_User --> Prisma
+    Prisma --> PG
+    S_KPI --> Redis
+    S_App --> Redis
+
+    %% External APIs
+    S_App -->|"HTTP"| ST
+    S_AI -->|"SDK"| Gemini
+    S_Intel -->|"HTTP"| Semrush
+
+    %% Dev tools
+    ViteDev -.->|"Middleware Mode"| Express
+    Vitest -.->|"Test"| SERVICES
+    MSW -.->|"Mock"| ST
+
+    %% CI/CD
+    GH -.->|"On Push"| Vitest
+    Husky -.->|"Pre-commit"| GH
+
+    %% Deployment
+    SPA -.->|"Build"| Vercel
+    Express -.->|"Deploy"| Railway
+    PG -.->|"托管"| Supabase
+    Redis -.->|"托管"| Upstash
+
+    %% Styles
+    classDef clientStyle fill:#6366f1,stroke:#818cf8,color:#fff
+    classDef apiStyle fill:#f59e0b,stroke:#fbbf24,color:#000
+    classDef serviceStyle fill:#10b981,stroke:#34d399,color:#000
+    classDef dataStyle fill:#3b82f6,stroke:#60a5fa,color:#fff
+    classDef externalStyle fill:#ef4444,stroke:#f87171,color:#fff
+    classDef infraStyle fill:#8b5cf6,stroke:#a78bfa,color:#fff
+
+    class Browser,SPA,Charts,State clientStyle
+    class Express,Middleware,CORS,RateLimit,Validate,ErrorHandler,Logger apiStyle
+    class S_KPI,S_Channel,S_User,S_Funnel,S_Rep,S_App,S_Health,S_Intel,S_AI serviceStyle
+    class Prisma,PG,Redis,TS,RS,CS,Multiplier dataStyle
+    class ST,Gemini,Semrush externalStyle
+    class ViteDev,Vitest,MSW,GH,Husky,Vercel,Railway,Supabase,Upstash infraStyle

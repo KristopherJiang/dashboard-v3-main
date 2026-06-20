@@ -1,0 +1,37 @@
+C4Container
+    title Dashboard V3 — 容器图 (Container Diagram)
+
+    Person(user, "C-Level 管理层", "Exness / Vantage 高管")
+
+    System_Boundary(sys, "Dashboard V3") {
+
+        Container(web, "React SPA", "React 19, Vite 6, Tailwind 4, Recharts 3", "PC 端 Dashboard UI<br/>14 个数据可视化组件")
+
+        Container(api, "Express API Server", "Express 5, TypeScript 5.8, Zod", "REST API 服务<br/>13 个路由模块<br/>中间件：CORS / 限流 / 验证 / 日志")
+
+        Container(services, "Service Layer", "TypeScript", "业务逻辑层<br/>KPI 计算、渠道分析、<br/>漏斗转化、AI 诊断")
+
+        ContainerDb(pg, "PostgreSQL 16", "Prisma 6 ORM", "主数据存储<br/>8 张核心表")
+
+        ContainerDb(redis, "Redis 7", "ioredis", "多层 TTL 缓存<br/>KPI 5min / 渠道 10min<br/>App市场 30min / ST 1h")
+
+        Container(worker, "定时任务", "node-cron", "数据同步、缓存预热<br/>Sensor Tower 数据拉取")
+    }
+
+    System_Ext(sensorTower, "Sensor Tower", "应用市场情报")
+    System_Ext(gemini, "Google Gemini", "AI 诊断服务")
+    System_Ext(seoApi, "SEO/ASO 平台", "搜索可见度数据")
+    System_Ext(monitoring, "全球监控节点", "健康度监测")
+
+    Rel(user, web, "使用Dashboard", "HTTPS")
+    Rel(web, api, "调用API", "REST / JSON")
+    Rel(api, services, "调用业务逻辑", "函数调用")
+    Rel(services, pg, "读写数据", "Prisma ORM")
+    Rel(services, redis, "读写缓存", "ioredis")
+    Rel(worker, sensorTower, "定时拉取数据", "REST API")
+    Rel(services, sensorTower, "实时查询", "REST API")
+    Rel(services, gemini, "AI 分析请求", "REST API")
+    Rel(services, seoApi, "SEO 数据查询", "REST API")
+    Rel(services, monitoring, "健康状态查询", "REST API")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
