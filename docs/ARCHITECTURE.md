@@ -61,10 +61,10 @@
 
 | 组件 | 方案 | 说明 |
 |------|------|------|
-| **前端部署** | Vercel（推荐）或 Cloudflare Pages | SPA 部署，CDN 全球加速，零配置 |
-| **后端部署** | Railway（推荐）或 Fly.io | 全托管、自动扩缩容、支持 PostgreSQL/Redis |
-| **数据库** | Supabase（PostgreSQL）或 Neon | 托管 PostgreSQL，免费额度足够开发期 |
-| **Redis** | Upstash（推荐）或 Redis Cloud | Serverless Redis，按请求计费 |
+| **前端部署** | Vercel | SPA 部署，CDN 全球加速，零配置 |
+| **后端部署** | Railway | Express API Server 托管，自动扩缩容 |
+| **数据库** | Neon PostgreSQL | 托管 PostgreSQL，Serverless，免费额度足够 |
+| **Redis** | 按需（开发期用 Docker 本地 Redis） | 生产环境可选 Upstash 或不使用 |
 | **CI/CD** | GitHub Actions | 自动测试、构建、部署 |
 | **域名/SSL** | Cloudflare | 免费 SSL、DNS 管理 |
 | **监控** | Sentry（错误）+ Vercel Analytics（性能） | 免费层足够 |

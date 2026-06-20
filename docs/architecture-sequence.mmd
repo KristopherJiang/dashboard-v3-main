@@ -143,10 +143,10 @@ sequenceDiagram
 
     rect rgb(255, 248, 240)
         Note over Browser,Gemini: 生产环境数据流
-        Browser->>Browser: Vercel CDN 全球加速
-        Browser->>Express: HTTPS → Railway 托管
-        Express->>PG: Prisma → Supabase PostgreSQL
-        Express->>Redis: ioredis → Upstash Redis
+        Browser->>Browser: Vercel CDN 全球加速（前端 SPA）
+        Browser->>Express: HTTPS → Railway 托管（后端 API）
+        Express->>PG: Prisma → Neon PostgreSQL（Serverless）
+        Express->>Redis: ioredis → 本地 Docker Redis（开发期）
         Express->>ST: HTTPS → Sensor Tower
         Express->>Gemini: HTTPS → Google Gemini API
     end
