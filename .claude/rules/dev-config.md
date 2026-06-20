@@ -16,6 +16,7 @@ npm run db:reset  # 重置（清空数据）
 ```
 
 ## pgAdmin（Web 数据库管理工具）
+启动命令：
 ```bash
 docker run -d --name dashboard-pgadmin -p 5050:80 \
   -e PGADMIN_DEFAULT_EMAIL=admin@local.dev \
@@ -24,8 +25,18 @@ docker run -d --name dashboard-pgadmin -p 5050:80 \
   dpage/pgadmin4
 ```
 - 访问: http://localhost:5050
-- 登录: admin@local.dev / admin
-- 添加服务器连接: Host=`host.docker.internal`, Port=5432, DB=`dashboard_v3`, User=`dashboard`, Pass=`dashboard_dev_2026`
+- 登录邮箱: `admin@local.dev`
+- 登录密码: `admin`
+
+添加 PostgreSQL 服务器连接步骤：
+1. 右键 "Servers" → "Register" → "Server"
+2. General 标签：Name 填 `Dashboard V3`
+3. Connection 标签：
+   - Host: `host.docker.internal`
+   - Port: `5432`
+   - Database: `dashboard_v3`
+   - Username: `dashboard`
+   - Password: `dashboard_dev_2026`
 
 ## 数据库连接
 - PostgreSQL: `postgresql://dashboard:dashboard_dev_2026@localhost:5432/dashboard_v3`
