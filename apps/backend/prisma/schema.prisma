@@ -7,167 +7,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============ KPI 指标存储 ============
+model UserFunnel {
+  id            Int      @id @default(autoincrement())
+  registerDate  DateTime @map("register_date") @db.Date
+  region        String?  @db.VarChar(64)
+  country       String?  @db.VarChar(128)
+  retailLayer1  String?  @map("retail_layer1") @db.VarChar(64)
+  retailLayer2  String?  @map("retail_layer2") @db.VarChar(64)
+  retailLayer3  String?  @map("retail_layer3") @db.VarChar(64)
+  userType      String?  @map("user_type") @db.VarChar(64)
+  regUserId     Int?     @default(0) @map("reg_user_id")
+  regLive7d     Int?     @default(0) @map("reg_live_7d")
+  regLiveKyc7d  Int?     @default(0) @map("reg_live_kyc_7d")
+  regFtd7d      Int?     @default(0) @map("reg_ftd_7d")
+  regFtt7d      Int?     @default(0) @map("reg_ftt_7d")
+  regLive30d    Int?     @default(0) @map("reg_live_30d")
+  regLiveKyc30d Int?     @default(0) @map("reg_live_kyc_30d")
+  regFtd30d     Int?     @default(0) @map("reg_ftd_30d")
+  regFtt30d     Int?     @default(0) @map("reg_ftt_30d")
 
-model KPIRecord {
-  id          String   @id @default(cuid())
-  metricType  String   // 'registration' | 'ftd' | 'ftt' | 'net_deposit' | 'trading_volume' | 'signup_ftd_cvr' | 'ftd_ftt_cvr' | 'd30_retention'
-  date        DateTime @db.Date
-  region      String   @default("GLOBAL")
-  value       Float
-  trendPop    Float    @default(0) // Period over Period 变化百分比
-  trendYoY    Float    @default(0) // Year over Year 变化百分比
-  chartData   Json?    // 图表数据数组
-  createdAt   DateTime @default(now())
-
-  @@index([metricType, date, region])
-  @@map("kpi_records")
+  @@map("user_funnel")
 }
 
-// ============ 渠道数据 ============
+model FtdFttConversion {
+  id        Int      @id @default(autoincrement())
+  ftdDate   DateTime @map("ftd_date") @db.Date
+  region    String?  @db.VarChar(64)
+  country   String?  @db.VarChar(128)
+  ftdUserId Int?     @default(0) @map("ftd_user_id")
+  ftdFtt7d  Int?     @default(0) @map("ftd_ftt_7d")
 
-model ChannelMetric {
-  id              String   @id @default(cuid())
-  channelId       String   // 'ib' | 'retail' | 'kol' | 'paid_ads' | 'dsp' | 'asa' | 'google_ads' | 'organic' | 'raf'
-  parentChannelId String?  // 父渠道 ID，用于树形结构
-  channelName     String
-  level           Int      // 1=顶层, 2=二级, 3=三级
-  date            DateTime @db.Date
-  region          String   @default("GLOBAL")
-  newUsers        Int
-  spend           Float
-  signupCAC       Float
-  kycCAC          Float
-  ftdCAC          Float
-  fttCAC          Float
-  roi             Float
-  ltv             Float
-  createdAt       DateTime @default(now())
-
-  @@index([channelId, date, region])
-  @@map("channel_metrics")
+  @@map("ftd_ftt_conversion")
 }
 
-// ============ 漏斗数据 ============
-
-model FunnelRecord {
-  id         String   @id @default(cuid())
-  stepNumber Int      // 1-7
-  stepTitle  String
-  date       DateTime @db.Date
-  region     String   @default("GLOBAL")
-  users      Int
-  createdAt  DateTime @default(now())
-
-  @@index([date, region])
-  @@map("funnel_records")
-}
-
-// ============ App 市场口碑 ============
-
-model AppReviewRecord {
-  id            String   @id @default(cuid())
-  platform      String   // 'ios' | 'android'
-  appName       String
+model DailyAggregate {
+  id            Int      @id @default(autoincrement())
   date          DateTime @db.Date
-  region        String   @default("GLOBAL")
-  downloads     Int
-  reviews       Int
-  score         Float
-  compAppName   String?
-  compDownloads Int?
-  compReviews   Int?
-  compScore     Float?
-  createdAt     DateTime @default(now())
+  region        String?  @db.VarChar(64)
+  country       String?  @db.VarChar(128)
+  retailLayer1  String?  @map("retail_layer1") @db.VarChar(64)
+  retailLayer2  String?  @map("retail_layer2") @db.VarChar(64)
+  retailLayer3  String?  @map("retail_layer3") @db.VarChar(64)
+  userType      String?  @map("user_type") @db.VarChar(64)
+  registerCnt   Int?     @default(0) @map("register_cnt")
+  ftdCnt        Int?     @default(0) @map("ftd_cnt")
+  fttCnt        Int?     @default(0) @map("ftt_cnt")
+  netDeposit    Float?   @default(0) @map("net_deposit")
+  tradingVolume Float?   @default(0) @map("trading_volume")
 
-  @@index([platform, date, region])
-  @@map("app_review_records")
+  @@map("daily_aggregates")
 }
 
-// ============ 舆情数据 ============
+model FttRetention {
+  id          Int      @id @default(autoincrement())
+  fttDate     DateTime @map("ftt_date") @db.Date
+  region      String?  @db.VarChar(64)
+  country     String?  @db.VarChar(128)
+  fttUserId   Int?     @default(0) @map("ftt_user_id")
+  fttTrade7d  Int?     @default(0) @map("ftt_trade_7d")
+  fttTrade30d Int?     @default(0) @map("ftt_trade_30d")
 
-model ReputationPoint {
-  id              String   @id @default(cuid())
-  name            String
-  platform        String   // 'Twitter' | 'App Store' | 'Reddit' | 'Trustpilot'
-  sentimentX      Float    // -100 到 100
-  influenceY      Float    // 0 到 100
-  volumeZ         Float    // 讨论声量
-  sentiment       String   // 'positive' | 'negative'
-  insight         String
-  suggestedAction String
-  date            DateTime @db.Date
-  region          String   @default("GLOBAL")
-  createdAt       DateTime @default(now())
-
-  @@index([date, region, sentiment])
-  @@map("reputation_points")
+  @@map("ftt_retention")
 }
 
-// ============ 健康度监测 ============
+model ChannelLtv {
+  id           Int      @id @default(autoincrement())
+  registerDate DateTime @map("register_date") @db.Date
+  region       String?  @db.VarChar(64)
+  country      String?  @db.VarChar(128)
+  retailLayer1 String?  @map("retail_layer1") @db.VarChar(64)
+  retailLayer2 String?  @map("retail_layer2") @db.VarChar(64)
+  retailLayer3 String?  @map("retail_layer3") @db.VarChar(64)
+  userType     String?  @map("user_type") @db.VarChar(64)
+  ltv30d       Float?   @default(0) @map("ltv_30d")
 
-model HealthNodeStatus {
-  id            String   @id @default(cuid())
-  nodeId        String
-  countryFlag   String
-  countryName   String
-  city          String
-  latency       Int      // ms
-  jitter        String
-  packetLoss    String
-  iosStatus     String   // 'normal' | 'removed'
-  androidStatus String   // 'normal' | 'removed'
-  iosDesc       String?
-  androidDesc   String?
-  recordedAt    DateTime @default(now())
-
-  @@index([nodeId, recordedAt])
-  @@map("health_node_statuses")
-}
-
-// ============ 市场情报 (SEO/GEO/ASO) ============
-
-model MarketIntelligenceRecord {
-  id        String   @id @default(cuid())
-  type      String   // 'seo' | 'geo' | 'aso'
-  date      DateTime @db.Date
-  region    String   @default("GLOBAL")
-  data      Json     // 灵活存储不同类型的指标数据
-  createdAt DateTime @default(now())
-
-  @@index([type, date, region])
-  @@map("market_intelligence_records")
-}
-
-// ============ AI 告警 ============
-
-model AlertRecord {
-  id              String   @id @default(cuid())
-  alertType       String   // 'critical' | 'warning' | 'optimize'
-  title           String
-  value           String
-  region          String
-  description     String
-  suggestedAction String
-  isRead          Boolean  @default(false)
-  createdAt       DateTime @default(now())
-
-  @@index([alertType, createdAt])
-  @@map("alert_records")
-}
-
-// ============ 营销 ROI ============
-
-model MarketingROIRecord {
-  id        String   @id @default(cuid())
-  weekLabel String   // 'W1' | 'W2' 等
-  date      DateTime @db.Date
-  region    String   @default("GLOBAL")
-  spend     Float
-  revenue   Float
-  roi       Float
-  createdAt DateTime @default(now())
-
-  @@index([date, region])
-  @@map("marketing_roi_records")
+  @@map("channel_ltv")
 }

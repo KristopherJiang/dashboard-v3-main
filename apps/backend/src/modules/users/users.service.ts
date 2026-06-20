@@ -1,23 +1,15 @@
-// Users 分布数据服务 — 从 daily_aggregates 读取 retail_layer1/2/3 旭日图数据
+// Users 分布数据服务 — 从 daily_aggregates 读取 retail_layer1/2/3 旭日图数据 (Prisma ORM)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getDateRange } from '../../common/utils/date-range';
-import { regionWhereClause } from '../../common/utils/region-filter';
+import { getRegionFilter } from '../../common/utils/region-filter-orm';
 
 export interface DistributionNode {
   name: string;
   value: number;
   pct: number;
   children?: DistributionNode[];
-}
-
-interface LayerRow {
-  layer1: string | null;
-  layer2: string | null;
-  layer3: string | null;
-  total: bigint;
 }
 
 @Injectable()
@@ -29,58 +21,68 @@ export class UsersService {
     region: string,
   ): Promise<{ totalNewUsers: number; distribution: DistributionNode[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionSql = regionWhereClause(region);
+    const regionFilter = getRegionFilter(region);
+
+    const whereClause = {
+      date: { gte: new Date(startDate), lte: new Date(endDate) },
+      ...regionFilter,
+    };
 
     // 按 retail_layer1 / layer2 / layer3 聚合注册人数
-    const sql = Prisma.sql`
-      SELECT
-        retail_layer1 AS layer1,
-        retail_layer2 AS layer2,
-        retail_layer3 AS layer3,
-        COALESCE(SUM(register_cnt), 0)::bigint AS total
-      FROM daily_aggregates
-      WHERE date >= ${startDate}::date AND date <= ${endDate}::date
-      ${region ? Prisma.raw(regionSql) : Prisma.empty}
-      GROUP BY retail_layer1, retail_layer2, retail_layer3
-      ORDER BY retail_layer1, retail_layer2, retail_layer3
-    `;
-    const rows = await this.prisma.$queryRaw<LayerRow[]>(sql);
+    // Prisma groupBy 不支持同时按三个字段分组后再聚合，
+    // 但支持 by 多字段。不过 daily_aggregates 表的组合列可能很多，
+    // 这里用 findMany + JS 聚合更可靠。
+    const rows = await this.prisma.dailyAggregate.findMany({
+      where: whereClause,
+      select: {
+        retailLayer1: true,
+        retailLayer2: true,
+        retailLayer3: true,
+        registerCnt: true,
+      },
+    });
 
     // 构建树形结构
-    const layer1Map = new Map<string, Map<string, LayerRow[]>>();
+    const layer1Map = new Map<
+      string,
+      Map<string, Array<{ layer3: string; total: number }>>
+    >();
     let totalNewUsers = 0;
 
     for (const row of rows) {
-      const l1 = row.layer1 ?? 'Unknown';
-      const l2 = row.layer2 ?? 'Unknown';
-      const count = Number(row.total);
+      const l1 = row.retailLayer1 ?? 'Unknown';
+      const l2 = row.retailLayer2 ?? 'Unknown';
+      const l3 = row.retailLayer3 ?? 'Unknown';
+      const count = row.registerCnt ?? 0;
       totalNewUsers += count;
 
       if (!layer1Map.has(l1)) layer1Map.set(l1, new Map());
       const l2Map = layer1Map.get(l1)!;
       if (!l2Map.has(l2)) l2Map.set(l2, []);
-      l2Map.get(l2)!.push(row);
+      l2Map.get(l2)!.push({ layer3: l3, total: count });
     }
 
     const distribution: DistributionNode[] = [];
 
     for (const [l1Name, l2Map] of layer1Map) {
       let l1Total = 0;
-      for (const rows of l2Map.values()) {
-        for (const r of rows) l1Total += Number(r.total);
+      for (const l2Rows of l2Map.values()) {
+        for (const r of l2Rows) l1Total += r.total;
       }
 
       const l2Children: DistributionNode[] = [];
 
       for (const [l2Name, l2Rows] of l2Map) {
-        let l2Total = 0;
-        for (const r of l2Rows) l2Total += Number(r.total);
+        const l2Total = l2Rows.reduce((sum, r) => sum + r.total, 0);
 
-        // Layer3 子节点
-        const l3Children: DistributionNode[] = [];
+        // Layer3 子节点 — 合并同名 layer3
+        const l3Map = new Map<string, number>();
         for (const r of l2Rows) {
-          const l3Name = r.layer3 ?? 'Unknown';
-          const l3Val = Number(r.total);
+          l3Map.set(r.layer3, (l3Map.get(r.layer3) ?? 0) + r.total);
+        }
+
+        const l3Children: DistributionNode[] = [];
+        for (const [l3Name, l3Val] of l3Map) {
           if (l3Val > 0) {
             l3Children.push({
               name: l3Name,

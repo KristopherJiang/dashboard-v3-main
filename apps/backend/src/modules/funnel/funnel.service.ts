@@ -1,10 +1,9 @@
-// Funnel 漏斗数据服务 — 从 user_funnel 表读取 7 步转化漏斗
+// Funnel 漏斗数据服务 — 从 user_funnel 表读取 7 步转化漏斗 (Prisma ORM)
 
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getDateRange } from '../../common/utils/date-range';
-import { regionWhereClause } from '../../common/utils/region-filter';
+import { getRegionFilter } from '../../common/utils/region-filter-orm';
 
 export interface FunnelStep {
   step: number;
@@ -15,16 +14,6 @@ export interface FunnelStep {
   cumCVR: number;
   dropoff: number;
   dropoffPct: number;
-}
-
-interface FunnelAggRow {
-  registration: bigint;
-  live_7d: bigint;
-  kyc_7d: bigint;
-  ftd_7d: bigint;
-  ftt_7d: bigint;
-  live_30d: bigint;
-  ftd_30d: bigint;
 }
 
 const STEP_TITLES = [
@@ -46,34 +35,36 @@ export class FunnelService {
     region: string,
   ): Promise<{ steps: FunnelStep[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionSql = regionWhereClause(region);
+    const regionFilter = getRegionFilter(region);
 
-    const sql = Prisma.sql`
-      SELECT
-        COALESCE(SUM(reg_user_id), 0)::bigint    AS registration,
-        COALESCE(SUM(reg_live_7d), 0)::bigint     AS live_7d,
-        COALESCE(SUM(reg_live_kyc_7d), 0)::bigint AS kyc_7d,
-        COALESCE(SUM(reg_ftd_7d), 0)::bigint      AS ftd_7d,
-        COALESCE(SUM(reg_ftt_7d), 0)::bigint      AS ftt_7d,
-        COALESCE(SUM(reg_live_30d), 0)::bigint     AS live_30d,
-        COALESCE(SUM(reg_ftd_30d), 0)::bigint      AS ftd_30d
-      FROM user_funnel
-      WHERE register_date >= ${startDate}::date AND register_date <= ${endDate}::date
-      ${region ? Prisma.raw(regionSql) : Prisma.empty}
-    `;
-    const [row] = await this.prisma.$queryRaw<FunnelAggRow[]>(sql);
+    const result = await this.prisma.userFunnel.aggregate({
+      where: {
+        registerDate: { gte: new Date(startDate), lte: new Date(endDate) },
+        ...regionFilter,
+      },
+      _sum: {
+        regUserId: true,
+        regLive7d: true,
+        regLiveKyc7d: true,
+        regFtd7d: true,
+        regFtt7d: true,
+        regLive30d: true,
+        regFtd30d: true,
+      },
+    });
 
+    const s = result._sum;
     const rawValues = [
-      Number(row?.registration ?? 0),
-      Number(row?.live_7d ?? 0),
-      Number(row?.kyc_7d ?? 0),
-      Number(row?.ftd_7d ?? 0),
-      Number(row?.ftt_7d ?? 0),
-      Number(row?.live_30d ?? 0),
-      Number(row?.ftd_30d ?? 0),
+      s?.regUserId ?? 0,
+      s?.regLive7d ?? 0,
+      s?.regLiveKyc7d ?? 0,
+      s?.regFtd7d ?? 0,
+      s?.regFtt7d ?? 0,
+      s?.regLive30d ?? 0,
+      s?.regFtd30d ?? 0,
     ];
 
-    const totalBaseUsers = rawValues[0] || 1; // 避免除零
+    const totalBaseUsers = rawValues[0] || 1;
 
     const steps: FunnelStep[] = rawValues.map((users, index) => {
       const pctOfTotal = parseFloat(
