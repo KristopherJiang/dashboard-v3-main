@@ -1,0 +1,152 @@
+sequenceDiagram
+    title Dashboard V3 前后端交互时序图
+
+    actor User as C-Level 管理层
+    participant Browser as 浏览器<br/>React 19 SPA
+    participant Context as DashboardContext<br/>timeRange + region
+    participant Hook as useApi Hook<br/>loading/error/data
+    participant API as API Client<br/>src/lib/api.ts
+    participant Express as Express Server<br/>Port 3000
+    participant MW as Middleware<br/>Zod + Cache + Logger
+    participant Route as Route Layer<br/>routes/*.routes.ts
+    participant Service as Service Layer<br/>services/*.service.ts
+    participant Scales as Scaling Engine<br/>scales.ts
+    participant PG as PostgreSQL 16<br/>Prisma ORM
+    participant Redis as Redis 7<br/>TTL Cache
+    participant ST as Sensor Tower API
+    participant Gemini as Google Gemini
+
+    Note over User,Gemini: === 场景1：用户打开 Dashboard，加载 KPI 数据 ===
+
+    User->>Browser: 打开 http://localhost:3000
+    Browser->>Express: GET / (SPA)
+    Express-->>Browser: index.html + React Bundle
+    Browser->>Context: 初始化 timeRange=mtd, region=GLOBAL
+    Context->>Hook: 触发 useApi(fetchKPI)
+    Hook->>Hook: setLoading(true)
+    Hook->>API: fetchKPI("mtd", "GLOBAL")
+    API->>Express: GET /api/v1/kpi?timeRange=mtd&region=GLOBAL
+
+    Express->>MW: 请求进入中间件栈
+    MW->>MW: 1. CORS 校验
+    MW->>MW: 2. Zod 参数验证
+    MW->>MW: 3. 生成缓存 key: "kpi:mtd:GLOBAL"
+
+    MW->>Redis: 查询缓存 key
+    alt 缓存命中（TTL 5min 未过期）
+        Redis-->>MW: 返回缓存数据
+        MW-->>API: 直接返回 JSON
+    else 缓存未命中
+        Redis-->>MW: null
+        MW->>Route: 转发到 kpi.routes.ts
+        Route->>Service: 调用 getKPIData("mtd", "GLOBAL")
+        Service->>Scales: getMultiplier("mtd", "GLOBAL")
+        Scales-->>Service: 1.0 × 1.0 = 1.0
+        Service->>PG: Prisma 查询 kpi_records
+        PG-->>Service: 返回原始数据
+        Service->>Service: 应用缩放系数计算
+        Service-->>Route: 返回 8 张卡片数据
+        Route->>MW: successResponse(data, meta)
+        MW->>Redis: 写入缓存 TTL=300s
+        MW-->>API: JSON 响应
+    end
+
+    API-->>Hook: 解析 JSON, 提取 data
+    Hook->>Hook: setData(data), setLoading(false)
+    Hook-->>Browser: 返回 {data, loading, error}
+    Browser->>Browser: 渲染 8 张 KPI 卡片
+    Browser-->>User: 看到实时数据
+
+    Note over User,Gemini: === 场景2：用户切换地区（ASIA_VN）===
+
+    User->>Browser: 点击地区选择器 → 选 ASIA_VN
+    Browser->>Context: setSelectedRegion("ASIA_VN")
+    Context->>Hook: useEffect 触发 refetch
+    Hook->>API: fetchKPI("mtd", "ASIA_VN")
+    API->>Express: GET /api/v1/kpi?timeRange=mtd&region=ASIA_VN
+    Express->>MW: Zod 验证 → Cache 查询
+    MW->>Route: cache miss → 转发
+    Route->>Service: getKPIData("mtd", "ASIA_VN")
+    Service->>Scales: getMultiplier("mtd", "ASIA_VN")
+    Scales-->>Service: 1.0 × 0.15 = 0.15
+    Service->>PG: 查询（按 region 过滤）
+    PG-->>Service: 返回越南地区数据
+    Service-->>Route: 缩放后的数据（约为 GLOBAL 的 15%）
+    Route-->>MW: successResponse
+    MW->>Redis: 缓存 key="kpi:mtd:ASIA_VN"
+    MW-->>API: JSON
+    API-->>Hook: 新数据
+    Hook-->>Browser: 更新 UI
+    Browser-->>User: KPI 数字变为越南地区数据
+
+    Note over User,Gemini: === 场景3：获取 App 市场数据（含外部 API）===
+
+    User->>Browser: 滚动到 App Market 区域
+    Browser->>Hook: useApi(fetchAppMarket)
+    Hook->>API: fetchAppMarket("mtd", "GLOBAL")
+    API->>Express: GET /api/v1/app-market
+    Express->>MW: Cache 查询
+    MW->>Route: cache miss
+    Route->>Service: getAppMarketData()
+    Service->>PG: 查询 app_review_records
+    PG-->>Service: 返回评分、评论趋势
+    Service->>ST: GET /v1/ios/sales_report_estimates
+    ST-->>Service: 返回下载量数据
+    Service->>Service: 合并数据库 + 外部数据
+    Service-->>Route: 完整 App Market 数据
+    Route-->>MW: successResponse
+    MW->>Redis: 缓存 TTL=1800s（30min）
+    MW-->>API: JSON
+    API-->>Hook: 数据就绪
+    Hook-->>Browser: 渲染 App Market 组件
+
+    Note over User,Gemini: === 场景4：AI 智能诊断 ===
+
+    User->>Browser: 点击"智能分析"按钮
+    Browser->>API: fetch("/api/v1/ai/diagnostic")
+    API->>Express: GET /api/v1/ai/diagnostic
+    Express->>Route: ai.routes.ts
+    Route->>Service: getAIDiagnostic()
+    Service->>PG: 收集 KPI + 渠道 + 漏斗数据
+    PG-->>Service: 返回聚合数据
+    Service->>Gemini: 发送数据请求 AI 分析
+    Gemini-->>Service: 返回 Markdown 诊断报告
+    Service-->>Route: AI 报告内容
+    Route-->>Express: successResponse
+    Express-->>API: JSON
+    API-->>Browser: 诊断文本
+    Browser->>Browser: 打字机效果逐字显示
+    Browser-->>User: 看到 AI 深度战略诊断报告
+
+    Note over User,Gemini: === 场景5：前端组件数据流全景 ===
+
+    rect rgb(240, 248, 255)
+        Note over Browser,Service: 14 个组件并行请求数据
+        Browser->>API: fetchKPI → 8 张卡片
+        Browser->>API: fetchChannels → 渠道矩阵
+        Browser->>API: fetchUserDistribution → 旭日图
+        Browser->>API: fetchFunnel → 漏斗
+        Browser->>API: fetchReputation → 舆情
+        Browser->>API: fetchAppMarket → App 市场
+        Browser->>API: fetchHealthNodes → 健康监测
+        Browser->>API: fetchMarketIntelligence → 市场情报
+        Browser->>API: fetchASO → ASO 数据
+        Browser->>API: fetchMarketCommand → 市场命令
+        Browser->>API: fetchAIAlerts → AI 告警
+        Browser->>API: fetchMarketingROI → 营销 ROI
+        Browser->>API: fetchUserDemographics → 用户画像
+        Note over API,Service: 所有请求经过统一的<br/>Middleware → Route → Service → DB 链路
+        Service-->>Browser: 各组件数据并行返回
+    end
+
+    Note over User,Gemini: === 部署架构 ===
+
+    rect rgb(255, 248, 240)
+        Note over Browser,Gemini: 生产环境数据流
+        Browser->>Browser: Vercel CDN 全球加速
+        Browser->>Express: HTTPS → Railway 托管
+        Express->>PG: Prisma → Supabase PostgreSQL
+        Express->>Redis: ioredis → Upstash Redis
+        Express->>ST: HTTPS → Sensor Tower
+        Express->>Gemini: HTTPS → Google Gemini API
+    end
