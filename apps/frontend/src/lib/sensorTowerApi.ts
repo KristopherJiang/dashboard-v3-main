@@ -58,7 +58,7 @@ export async function fetchSensorTowerData(
     const relevantCountries = REGION_TO_ISO[selectedRegion] || [];
     const countriesQuery = relevantCountries.join(',');
 
-    const url = `/api/sensortower/metrics?platform=${reqPlatform}&start_date=${startDate}&end_date=${endDate}${countriesQuery ? `&countries=${countriesQuery}` : ''}`;
+    const url = `/api/v1/sensortower/metrics?platform=${reqPlatform}&start_date=${startDate}&end_date=${endDate}${countriesQuery ? `&countries=${countriesQuery}` : ''}`;
 
     console.log(`[SensorTower client] Fetching real endpoints: ${url}`);
     const res = await fetch(url);

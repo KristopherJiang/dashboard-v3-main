@@ -689,8 +689,17 @@ function chartDataToConversion2(points: { month: string; current: number; previo
 }
 
 /** 从 API 卡片中提取趋势百分比字符串 */
-function getTrendFromCard(card: KPICard): { value1: string; value2: string } {
-  return { value1: card.trendPoP, value2: card.trendYoY };
+function getTrendFromCard(
+  card: KPICard,
+  timeCtx: any,
+): { timeCtx: any; value1: string; value2: string } {
+  const pop = typeof card.trendPoP === 'number' ? card.trendPoP : Number(card.trendPoP) || 0;
+  const yoy = typeof card.trendYoY === 'number' ? card.trendYoY : Number(card.trendYoY) || 0;
+  return {
+    timeCtx,
+    value1: `${pop >= 0 ? '+' : ''}${pop.toFixed(1)}%`,
+    value2: `${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}%`,
+  };
 }
 
 /** 按 key 从 API cards 中查找对应卡片 */
@@ -844,34 +853,37 @@ export default function KPICards() {
   const retCard = findCard(cards, 'd30Retention');
 
   // 从 API chartData 生成图表数据（若 API 未返回则 fallback）
-  const dynDataA2 = regCard
-    ? chartDataToTrendA2(regCard.chartData)
-    : React.useMemo(() => remapChartData(dataA2), [remapChartData]);
-  const dynDataB = ftdCard
-    ? chartDataToTrendB(ftdCard.chartData)
-    : React.useMemo(() => remapChartData(dataB), [remapChartData]);
-  const dynDataC = volCard
-    ? chartDataToTrendC(volCard.chartData)
-    : React.useMemo(() => remapChartData(dataC), [remapChartData]);
+  // hooks 必须无条件调用，不能放在三元表达式里
+  const fallbackA2 = React.useMemo(() => remapChartData(dataA2), [remapChartData]);
+  const fallbackB = React.useMemo(() => remapChartData(dataB), [remapChartData]);
+  const fallbackC = React.useMemo(() => remapChartData(dataC), [remapChartData]);
+  const fallbackConv1 = React.useMemo(() => remapChartData(dataConversion1), [remapChartData]);
+  const fallbackConv2 = React.useMemo(() => remapChartData(dataConversion2), [remapChartData]);
+  const fallbackRetention = React.useMemo(
+    () => remapChartData(dataRetentionMonthly),
+    [remapChartData],
+  );
+
+  const dynDataA2 = regCard ? chartDataToTrendA2(regCard.chartData) : fallbackA2;
+  const dynDataB = ftdCard ? chartDataToTrendB(ftdCard.chartData) : fallbackB;
+  const dynDataC = volCard ? chartDataToTrendC(volCard.chartData) : fallbackC;
   const dynDataConversion1 = cv1Card
     ? chartDataToTrendConversion(cv1Card.chartData)
-    : React.useMemo(() => remapChartData(dataConversion1), [remapChartData]);
-  const dynDataConversion2 = cv2Card
-    ? chartDataToConversion2(cv2Card.chartData)
-    : React.useMemo(() => remapChartData(dataConversion2), [remapChartData]);
+    : fallbackConv1;
+  const dynDataConversion2 = cv2Card ? chartDataToConversion2(cv2Card.chartData) : fallbackConv2;
   const dynDataRetentionMonthly = retCard
     ? chartDataToTrendRetention(retCard.chartData)
-    : React.useMemo(() => remapChartData(dataRetentionMonthly), [remapChartData]);
+    : fallbackRetention;
 
   // 趋势数据：从 API 读取或 fallback 到原有计算
-  const trendA = regCard ? getTrendFromCard(regCard) : getTrendConfig(timeCtx, 9.4);
-  const trendFTD = ftdCard ? getTrendFromCard(ftdCard) : getTrendConfig(timeCtx, 12.2);
-  const trendFTT = fttCard ? getTrendFromCard(fttCard) : getTrendConfig(timeCtx, 15.6);
-  const trendDep = depCard ? getTrendFromCard(depCard) : getTrendConfig(timeCtx, 23.3);
-  const trendVol = volCard ? getTrendFromCard(volCard) : getTrendConfig(timeCtx, 25.6);
-  const trendConv1 = cv1Card ? getTrendFromCard(cv1Card) : getTrendConfig(timeCtx, 2.4);
-  const trendConv2 = cv2Card ? getTrendFromCard(cv2Card) : getTrendConfig(timeCtx, 1.8);
-  const trendRet = retCard ? getTrendFromCard(retCard) : getTrendConfig(timeCtx, 1.2);
+  const trendA = regCard ? getTrendFromCard(regCard, timeCtx) : getTrendConfig(timeCtx, 9.4);
+  const trendFTD = ftdCard ? getTrendFromCard(ftdCard, timeCtx) : getTrendConfig(timeCtx, 12.2);
+  const trendFTT = fttCard ? getTrendFromCard(fttCard, timeCtx) : getTrendConfig(timeCtx, 15.6);
+  const trendDep = depCard ? getTrendFromCard(depCard, timeCtx) : getTrendConfig(timeCtx, 23.3);
+  const trendVol = volCard ? getTrendFromCard(volCard, timeCtx) : getTrendConfig(timeCtx, 25.6);
+  const trendConv1 = cv1Card ? getTrendFromCard(cv1Card, timeCtx) : getTrendConfig(timeCtx, 2.4);
+  const trendConv2 = cv2Card ? getTrendFromCard(cv2Card, timeCtx) : getTrendConfig(timeCtx, 1.8);
+  const trendRet = retCard ? getTrendFromCard(retCard, timeCtx) : getTrendConfig(timeCtx, 1.2);
 
   // 核心数值：从 API 读取或 fallback（API 有数据时 fallback 不生效）
   const fallbackMultiplier = 1;
