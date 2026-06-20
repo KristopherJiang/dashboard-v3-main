@@ -3,25 +3,25 @@
   "private": true,
   "version": "1.0.0",
   "description": "PC端营销数据 Dashboard — Exness/Vantage C-Level 管理层",
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "dev": "concurrently -n FE,BE -c cyan,green \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run start:dev",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm run test",
-    "test:backend": "cd backend && npm run test",
-    "typecheck": "cd frontend && npm run typecheck && cd ../backend && npm run typecheck",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "check": "turbo typecheck lint format:check",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "db:migrate": "cd backend && npx prisma migrate dev",
-    "db:studio": "cd backend && npx prisma studio --port 5555",
-    "e2e": "npx playwright test",
-    "diagram": "mmdc -i docs/architecture.mmd -o docs/architecture.svg -t dark -b transparent && mmdc -i docs/c4-context.mmd -o docs/c4-context.svg -t default -b white --scale 2 && mmdc -i docs/c4-container.mmd -o docs/c4-container.svg -t default -b white --scale 2 && mmdc -i docs/architecture-sequence.mmd -o docs/architecture-sequence.svg -t default -b white --scale 2"
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:migrate": "cd apps/backend && pnpm prisma migrate dev",
+    "db:studio": "cd apps/backend && pnpm prisma studio --port 5555",
+    "e2e": "playwright test",
+    "clean": "turbo clean"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "turbo": "^2.0.0"
   }
 }
