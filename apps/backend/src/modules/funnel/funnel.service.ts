@@ -1,17 +1,10 @@
-// Funnel 漏斗数据服务 — 7 步转化漏斗
+// Funnel 漏斗数据服务 — 从 user_funnel 表读取 7 步转化漏斗
 
 import { Injectable } from '@nestjs/common';
-import { getMultiplier } from '../../common/scaling/scales';
-
-const FUNNEL_BASE_STEPS = [
-  { step: 1, title: '注册', baseUsers: 18420 },
-  { step: 2, title: 'KYC', baseUsers: 13815 },
-  { step: 3, title: 'FTD', baseUsers: 8640 },
-  { step: 4, title: 'FTT', baseUsers: 5120 },
-  { step: 5, title: '二次入金', baseUsers: 3840 },
-  { step: 6, title: '活跃交易', baseUsers: 2688 },
-  { step: 7, title: 'VIP', baseUsers: 940 },
-];
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { getDateRange } from '../../common/utils/date-range';
+import { regionWhereClause } from '../../common/utils/region-filter';
 
 export interface FunnelStep {
   step: number;
@@ -24,49 +17,86 @@ export interface FunnelStep {
   dropoffPct: number;
 }
 
+interface FunnelAggRow {
+  registration: bigint;
+  live_7d: bigint;
+  kyc_7d: bigint;
+  ftd_7d: bigint;
+  ftt_7d: bigint;
+  live_30d: bigint;
+  ftd_30d: bigint;
+}
+
+const STEP_TITLES = [
+  '注册',
+  'Live 7D',
+  'KYC 7D',
+  'FTD 7D',
+  'FTT 7D',
+  'Live 30D',
+  'FTD 30D',
+];
+
 @Injectable()
 export class FunnelService {
-  getFunnelData(timeRange: string, region: string): { steps: FunnelStep[] } {
-    const multiplier = getMultiplier(timeRange, region);
-    const totalBaseUsers = FUNNEL_BASE_STEPS[0].baseUsers;
+  constructor(private readonly prisma: PrismaService) {}
 
-    const steps: FunnelStep[] = FUNNEL_BASE_STEPS.map((base, index) => {
-      const users = Math.round(base.baseUsers * multiplier);
+  async getFunnelData(
+    timeRange: string,
+    region: string,
+  ): Promise<{ steps: FunnelStep[] }> {
+    const { startDate, endDate } = getDateRange(timeRange);
+    const regionSql = regionWhereClause(region);
+
+    const sql = Prisma.sql`
+      SELECT
+        COALESCE(SUM(reg_user_id), 0)::bigint    AS registration,
+        COALESCE(SUM(reg_live_7d), 0)::bigint     AS live_7d,
+        COALESCE(SUM(reg_live_kyc_7d), 0)::bigint AS kyc_7d,
+        COALESCE(SUM(reg_ftd_7d), 0)::bigint      AS ftd_7d,
+        COALESCE(SUM(reg_ftt_7d), 0)::bigint      AS ftt_7d,
+        COALESCE(SUM(reg_live_30d), 0)::bigint     AS live_30d,
+        COALESCE(SUM(reg_ftd_30d), 0)::bigint      AS ftd_30d
+      FROM user_funnel
+      WHERE register_date >= ${startDate}::date AND register_date <= ${endDate}::date
+      ${region ? Prisma.raw(regionSql) : Prisma.empty}
+    `;
+    const [row] = await this.prisma.$queryRaw<FunnelAggRow[]>(sql);
+
+    const rawValues = [
+      Number(row?.registration ?? 0),
+      Number(row?.live_7d ?? 0),
+      Number(row?.kyc_7d ?? 0),
+      Number(row?.ftd_7d ?? 0),
+      Number(row?.ftt_7d ?? 0),
+      Number(row?.live_30d ?? 0),
+      Number(row?.ftd_30d ?? 0),
+    ];
+
+    const totalBaseUsers = rawValues[0] || 1; // 避免除零
+
+    const steps: FunnelStep[] = rawValues.map((users, index) => {
       const pctOfTotal = parseFloat(
-        ((base.baseUsers / totalBaseUsers) * 100).toFixed(1),
+        ((users / totalBaseUsers) * 100).toFixed(1),
       );
       const stepCVR =
         index === 0
           ? 100
           : parseFloat(
-              (
-                (base.baseUsers / FUNNEL_BASE_STEPS[index - 1].baseUsers) *
-                100
-              ).toFixed(1),
+              ((users / (rawValues[index - 1] || 1)) * 100).toFixed(1),
             );
-      const cumCVR = parseFloat(
-        ((base.baseUsers / totalBaseUsers) * 100).toFixed(1),
-      );
-      const dropoff =
-        index === 0
-          ? 0
-          : Math.round(
-              (FUNNEL_BASE_STEPS[index - 1].baseUsers - base.baseUsers) *
-                multiplier,
-            );
+      const cumCVR = pctOfTotal;
+      const dropoff = index === 0 ? 0 : rawValues[index - 1] - users;
       const dropoffPct =
         index === 0
           ? 0
           : parseFloat(
-              (
-                (1 - base.baseUsers / FUNNEL_BASE_STEPS[index - 1].baseUsers) *
-                100
-              ).toFixed(1),
+              ((1 - users / (rawValues[index - 1] || 1)) * 100).toFixed(1),
             );
 
       return {
-        step: base.step,
-        title: base.title,
+        step: index + 1,
+        title: STEP_TITLES[index],
         users,
         pctOfTotal,
         stepCVR,

@@ -1,17 +1,10 @@
-// Marketing ROI 数据服务 — 7 周投资回报率
+// Marketing ROI 数据服务 — 从 daily_aggregates 按月聚合计算 ROI 趋势
 
 import { Injectable } from '@nestjs/common';
-import { getMultiplier } from '../../common/scaling/scales';
-
-const WEEKLY_BASE = [
-  { week: 'W1', baseSpend: 50000, baseRevenue: 180000 },
-  { week: 'W2', baseSpend: 55000, baseRevenue: 198000 },
-  { week: 'W3', baseSpend: 48000, baseRevenue: 172800 },
-  { week: 'W4', baseSpend: 62000, baseRevenue: 229400 },
-  { week: 'W5', baseSpend: 58000, baseRevenue: 220400 },
-  { week: 'W6', baseSpend: 53000, baseRevenue: 201400 },
-  { week: 'W7', baseSpend: 67000, baseRevenue: 261300 },
-];
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { getDateRange } from '../../common/utils/date-range';
+import { regionWhereClause } from '../../common/utils/region-filter';
 
 export interface WeeklyROI {
   week: string;
@@ -20,32 +13,79 @@ export interface WeeklyROI {
   roi: number;
 }
 
+interface MonthlyRow {
+  month: string;
+  net_deposit: string;
+  trading_volume: string;
+  register_cnt: bigint;
+  ftd_cnt: bigint;
+}
+
 @Injectable()
 export class MarketingService {
-  getMarketingRoiData(
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getMarketingRoiData(
     timeRange: string,
     region: string,
-  ): {
+  ): Promise<{
     weeks: WeeklyROI[];
     totalSpend: number;
     totalRevenue: number;
     avgRoi: number;
-  } {
-    const multiplier = getMultiplier(timeRange, region);
+  }> {
+    const { startDate, endDate } = getDateRange(timeRange);
+    const regionSql = regionWhereClause(region);
 
-    const weeks: WeeklyROI[] = WEEKLY_BASE.map((w) => {
-      const spend = Math.round(w.baseSpend * multiplier);
-      const revenue = Math.round(w.baseRevenue * multiplier);
-      const roi = parseFloat(((revenue / spend - 1) * 100).toFixed(1));
-      return { week: w.week, spend, revenue, roi };
+    // 按月聚合：net_deposit 作为 spend（营销支出代理），
+    // trading_volume 作为 revenue（交易收入代理）
+    const sql = Prisma.sql`
+      SELECT
+        TO_CHAR(date, 'YYYY-MM')         AS month,
+        COALESCE(SUM(net_deposit), 0)    AS net_deposit,
+        COALESCE(SUM(trading_volume), 0) AS trading_volume,
+        COALESCE(SUM(register_cnt), 0)::bigint AS register_cnt,
+        COALESCE(SUM(ftd_cnt), 0)::bigint      AS ftd_cnt
+      FROM daily_aggregates
+      WHERE date >= ${startDate}::date AND date <= ${endDate}::date
+      ${region ? Prisma.raw(regionSql) : Prisma.empty}
+      GROUP BY TO_CHAR(date, 'YYYY-MM')
+      ORDER BY month
+    `;
+    const rows = await this.prisma.$queryRaw<MonthlyRow[]>(sql);
+
+    let totalSpend = 0;
+    let totalRevenue = 0;
+
+    const weeks: WeeklyROI[] = rows.map((row, index) => {
+      // 使用 net_deposit 的绝对值作为营销支出估算
+      // 使用 trading_volume 作为收入估算
+      const spend = Math.abs(Number(row.net_deposit));
+      const revenue = Number(row.trading_volume);
+      const roi =
+        spend > 0 ? parseFloat(((revenue / spend - 1) * 100).toFixed(1)) : 0;
+
+      totalSpend += spend;
+      totalRevenue += revenue;
+
+      return {
+        week: `M${index + 1}`, // 用月份序号作为 label
+        spend: Math.round(spend),
+        revenue: Math.round(revenue),
+        roi,
+      };
     });
 
-    const totalSpend = weeks.reduce((s, w) => s + w.spend, 0);
-    const totalRevenue = weeks.reduce((s, w) => s + w.revenue, 0);
-    const avgRoi = parseFloat(
-      ((totalRevenue / totalSpend - 1) * 100).toFixed(1),
-    );
+    const avgRoi =
+      totalSpend > 0
+        ? parseFloat(((totalRevenue / totalSpend - 1) * 100).toFixed(1))
+        : 0;
 
-    return { weeks, totalSpend, totalRevenue, avgRoi };
+    return {
+      weeks,
+      totalSpend: Math.round(totalSpend),
+      totalRevenue: Math.round(totalRevenue),
+      avgRoi,
+    };
   }
 }

@@ -1,3 +1,11 @@
+// Prisma $queryRaw 返回 BigInt，JSON.stringify 无法序列化
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+if (typeof BigInt.prototype.toJSON !== 'function') {
+  BigInt.prototype.toJSON = function (this: bigint) {
+    return Number(this);
+  };
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
