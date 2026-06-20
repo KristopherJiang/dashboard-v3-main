@@ -666,7 +666,9 @@ function chartDataToTrendRetention(points: { month: string; current: number; pre
   }));
 }
 
-function chartDataToTrendConversion(points: { month: string; current: number; previous: number }[]) {
+function chartDataToTrendConversion(
+  points: { month: string; current: number; previous: number }[],
+) {
   return points.map((p) => ({
     month: p.month,
     current: p.current,
@@ -862,37 +864,22 @@ export default function KPICards() {
     : React.useMemo(() => remapChartData(dataRetentionMonthly), [remapChartData]);
 
   // 趋势数据：从 API 读取或 fallback 到原有计算
-  const trendA = regCard
-    ? getTrendFromCard(regCard)
-    : getTrendConfig(timeCtx, 9.4);
-  const trendFTD = ftdCard
-    ? getTrendFromCard(ftdCard)
-    : getTrendConfig(timeCtx, 12.2);
-  const trendFTT = fttCard
-    ? getTrendFromCard(fttCard)
-    : getTrendConfig(timeCtx, 15.6);
-  const trendDep = depCard
-    ? getTrendFromCard(depCard)
-    : getTrendConfig(timeCtx, 23.3);
-  const trendVol = volCard
-    ? getTrendFromCard(volCard)
-    : getTrendConfig(timeCtx, 25.6);
-  const trendConv1 = cv1Card
-    ? getTrendFromCard(cv1Card)
-    : getTrendConfig(timeCtx, 2.4);
-  const trendConv2 = cv2Card
-    ? getTrendFromCard(cv2Card)
-    : getTrendConfig(timeCtx, 1.8);
-  const trendRet = retCard
-    ? getTrendFromCard(retCard)
-    : getTrendConfig(timeCtx, 1.2);
+  const trendA = regCard ? getTrendFromCard(regCard) : getTrendConfig(timeCtx, 9.4);
+  const trendFTD = ftdCard ? getTrendFromCard(ftdCard) : getTrendConfig(timeCtx, 12.2);
+  const trendFTT = fttCard ? getTrendFromCard(fttCard) : getTrendConfig(timeCtx, 15.6);
+  const trendDep = depCard ? getTrendFromCard(depCard) : getTrendConfig(timeCtx, 23.3);
+  const trendVol = volCard ? getTrendFromCard(volCard) : getTrendConfig(timeCtx, 25.6);
+  const trendConv1 = cv1Card ? getTrendFromCard(cv1Card) : getTrendConfig(timeCtx, 2.4);
+  const trendConv2 = cv2Card ? getTrendFromCard(cv2Card) : getTrendConfig(timeCtx, 1.8);
+  const trendRet = retCard ? getTrendFromCard(retCard) : getTrendConfig(timeCtx, 1.2);
 
-  // 核心数值：从 API 读取或 fallback
-  const regVal = regCard?.value ?? Math.floor(12480 * m).toLocaleString();
-  const ftdVal = ftdCard?.value ?? Math.floor(2995 * m).toLocaleString();
-  const fttVal = fttCard?.value ?? Math.floor(1497 * m).toLocaleString();
-  const depVal = depCard?.value ?? `$${Math.floor(1542060 * m).toLocaleString()}`;
-  const volVal = volCard?.value ?? `$${Math.floor(15420600 * m).toLocaleString()}`;
+  // 核心数值：从 API 读取或 fallback（API 有数据时 fallback 不生效）
+  const fallbackMultiplier = 1;
+  const regVal = regCard?.value ?? Math.floor(12480 * fallbackMultiplier).toLocaleString();
+  const ftdVal = ftdCard?.value ?? Math.floor(2995 * fallbackMultiplier).toLocaleString();
+  const fttVal = fttCard?.value ?? Math.floor(1497 * fallbackMultiplier).toLocaleString();
+  const depVal = depCard?.value ?? `$${Math.floor(1542060 * fallbackMultiplier).toLocaleString()}`;
+  const volVal = volCard?.value ?? `$${Math.floor(15420600 * fallbackMultiplier).toLocaleString()}`;
   const cv1Val = cv1Card?.value ?? '24.0%';
   const cv2Val = cv2Card?.value ?? '50.0%';
   const retVal = retCard?.value ?? '20.0%';
@@ -1056,9 +1043,7 @@ export default function KPICards() {
 
         {/* 保真数值与标签排版 */}
         <div className="mb-4">
-          <div className="text-3xl font-black text-[#1a1f2e] tracking-tighter mb-2">
-            {volVal}
-          </div>
+          <div className="text-3xl font-black text-[#1a1f2e] tracking-tighter mb-2">{volVal}</div>
           <div className="flex items-center gap-3 text-[11px] font-bold">
             <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-400">
               {timeCtx.label1} {trendVol.value1}
@@ -1155,9 +1140,7 @@ export default function KPICards() {
                 <Landmark size={12} strokeWidth={2.5} />
                 <span className="text-[9px] font-black uppercase tracking-wider">注册人数</span>
               </div>
-              <span className="text-sm font-black text-slate-800">
-                {regVal}
-              </span>
+              <span className="text-sm font-black text-slate-800">{regVal}</span>
             </div>
             <div className="my-1.5 text-slate-300">
               <ArrowDown size={12} className="text-slate-300" />
@@ -1167,9 +1150,7 @@ export default function KPICards() {
                 <Wallet size={12} strokeWidth={2.5} />
                 <span className="text-[9px] font-black uppercase tracking-wider">FTD人数</span>
               </div>
-              <span className="text-sm font-black text-slate-800">
-                {ftdVal}
-              </span>
+              <span className="text-sm font-black text-slate-800">{ftdVal}</span>
             </div>
           </div>
         </div>
@@ -1255,9 +1236,7 @@ export default function KPICards() {
                 <Wallet size={12} strokeWidth={2.5} />
                 <span className="text-[9px] font-black uppercase tracking-wider">FTD人数</span>
               </div>
-              <span className="text-sm font-black text-slate-800">
-                {ftdVal}
-              </span>
+              <span className="text-sm font-black text-slate-800">{ftdVal}</span>
             </div>
             <div className="my-1.5 text-slate-300">
               <ArrowDown size={12} className="text-slate-300" />
@@ -1267,9 +1246,7 @@ export default function KPICards() {
                 <BarChart2 size={12} strokeWidth={2.5} />
                 <span className="text-[9px] font-black uppercase tracking-wider">FTT人数</span>
               </div>
-              <span className="text-sm font-black text-slate-800">
-                {fttVal}
-              </span>
+              <span className="text-sm font-black text-slate-800">{fttVal}</span>
             </div>
           </div>
         </div>
