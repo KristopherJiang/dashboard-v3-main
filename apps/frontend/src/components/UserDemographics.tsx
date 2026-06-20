@@ -1,21 +1,56 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchUserDemographics, type DemographicItem } from '../lib/api';
+import { SkeletonLoader, ApiError } from './shared/ApiStates';
 
-const regionData = [
-  { name: '北美 (NA)', value: 45, color: 'bg-blue-600' },
-  { name: '欧洲 (EU)', value: 25, color: 'bg-blue-400' },
-  { name: '亚太 (APAC)', value: 20, color: 'bg-blue-300' },
-  { name: '其他', value: 10, color: 'bg-gray-200' },
+// 颜色映射：前 4 个地区依次分配 CSS class
+const REGION_COLORS = ['bg-blue-600', 'bg-blue-400', 'bg-blue-300', 'bg-gray-200'];
+
+interface RegionWithColor extends DemographicItem {
+  color: string;
+}
+
+const FALLBACK_REGIONS: DemographicItem[] = [
+  { label: '北美 (NA)', count: 0, pct: 45 },
+  { label: '欧洲 (EU)', count: 0, pct: 25 },
+  { label: '亚太 (APAC)', count: 0, pct: 20 },
+  { label: '其他', count: 0, pct: 10 },
 ];
 
-const ageData = [
-  { name: '18-24', value: 20, fill: '#cbd5e1' },
-  { name: '25-34', value: 45, fill: '#3b82f6' },
-  { name: '35-44', value: 25, fill: '#93c5fd' },
-  { name: '45+', value: 10, fill: '#f1f5f9' },
+const FALLBACK_AGES: DemographicItem[] = [
+  { label: '18-24', count: 0, pct: 20 },
+  { label: '25-34', count: 0, pct: 45 },
+  { label: '35-44', count: 0, pct: 25 },
+  { label: '45+', count: 0, pct: 10 },
 ];
+
+const AGE_FILLS = ['#cbd5e1', '#3b82f6', '#93c5fd', '#f1f5f9'];
+
+function mapRegions(items: DemographicItem[]): RegionWithColor[] {
+  return items.map((r, i) => ({
+    ...r,
+    color: REGION_COLORS[i] ?? 'bg-gray-200',
+  }));
+}
+
+function mapAgeGroups(items: DemographicItem[]) {
+  return items.map((a, i) => ({
+    name: a.label,
+    value: a.pct,
+    fill: AGE_FILLS[i] ?? '#f1f5f9',
+  }));
+}
 
 export default function UserDemographics() {
+  const { data, loading, error } = useApi(fetchUserDemographics);
+
+  if (loading) return <SkeletonLoader />;
+  if (error) return <ApiError message={error} />;
+
+  const regionData = mapRegions(data?.regionDistribution ?? FALLBACK_REGIONS);
+  const ageData = mapAgeGroups(data?.ageDistribution ?? FALLBACK_AGES);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
@@ -32,15 +67,15 @@ export default function UserDemographics() {
             Top Regions
           </div>
           {regionData.map((region) => (
-            <div key={region.name} className="flex flex-col gap-1">
+            <div key={region.label} className="flex flex-col gap-1">
               <div className="flex justify-between text-xs">
-                <span className="font-medium text-gray-700">{region.name}</span>
-                <span className="text-gray-500">{region.value}%</span>
+                <span className="font-medium text-gray-700">{region.label}</span>
+                <span className="text-gray-500">{region.pct}%</span>
               </div>
               <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${region.color} rounded-full`}
-                  style={{ width: `${region.value}%` }}
+                  style={{ width: `${region.pct}%` }}
                 ></div>
               </div>
             </div>

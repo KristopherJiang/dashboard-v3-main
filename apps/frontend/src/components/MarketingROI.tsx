@@ -8,15 +8,18 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchMarketingROI, type WeeklyROI } from '../lib/api';
+import { SkeletonLoader, ApiError } from './shared/ApiStates';
 
-const data = [
-  { name: 'W1', spend: 4000, revenue: 2400, roi: 1.6 },
-  { name: 'W2', spend: 3000, revenue: 1398, roi: 1.4 },
-  { name: 'W3', spend: 2000, revenue: 9800, roi: 4.9 },
-  { name: 'W4', spend: 2780, revenue: 3908, roi: 1.4 },
-  { name: 'W5', spend: 1890, revenue: 4800, roi: 2.5 },
-  { name: 'W6', spend: 2390, revenue: 3800, roi: 1.6 },
-  { name: 'W7', spend: 3490, revenue: 4300, roi: 1.2 },
+const FALLBACK_WEEKS: WeeklyROI[] = [
+  { week: 'W1', spend: 4000, revenue: 2400, roi: 1.6 },
+  { week: 'W2', spend: 3000, revenue: 1398, roi: 1.4 },
+  { week: 'W3', spend: 2000, revenue: 9800, roi: 4.9 },
+  { week: 'W4', spend: 2780, revenue: 3908, roi: 1.4 },
+  { week: 'W5', spend: 1890, revenue: 4800, roi: 2.5 },
+  { week: 'W6', spend: 2390, revenue: 3800, roi: 1.6 },
+  { week: 'W7', spend: 3490, revenue: 4300, roi: 1.2 },
 ];
 
 const getWeekDateRange = (weekName: string) => {
@@ -64,6 +67,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function MarketingROI() {
+  const { data, loading, error } = useApi(fetchMarketingROI);
+
+  if (loading) return <SkeletonLoader />;
+  if (error) return <ApiError message={error} />;
+
+  const chartData = (data?.weeks ?? FALLBACK_WEEKS).map((w) => ({
+    name: w.week,
+    spend: w.spend,
+    revenue: w.revenue,
+    roi: w.roi,
+  }));
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
@@ -85,7 +100,7 @@ export default function MarketingROI() {
 
       <div className="flex-1 min-h-[250px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />

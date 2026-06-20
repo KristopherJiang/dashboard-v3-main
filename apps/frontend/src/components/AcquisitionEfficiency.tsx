@@ -7,91 +7,85 @@ import {
   BarChart2,
   AlertTriangle,
   Lightbulb,
-  ChevronDown,
-  Calendar,
   HelpCircle,
 } from 'lucide-react';
+import { useApi } from '../lib/hooks/useApi';
+import { fetchFunnel, type FunnelStep } from '../lib/api';
+import { SkeletonLoader, ApiError } from './shared/ApiStates';
 
-const funnelData = [
+// UI 元数据：图标、副标题、漏斗梯形宽度（纯展示层，不来自 API）
+const STEP_META: Record<
+  number,
+  { subtitle: string; icon: typeof UserPlus; color: string; topW: number; botW: number }
+> = {
+  1: { subtitle: 'Sign Up', icon: UserPlus, color: 'bg-[#60996D]', topW: 100, botW: 85 },
+  2: { subtitle: '开户', icon: Contact, color: 'bg-[#72A87E]', topW: 85, botW: 70 },
+  3: { subtitle: '完成KYC', icon: FileCheck, color: 'bg-[#84B78F]', topW: 70, botW: 55 },
+  4: { subtitle: '首次入金', icon: Wallet, color: 'bg-[#96C6A0]', topW: 55, botW: 40 },
+  5: { subtitle: '首次交易', icon: BarChart2, color: 'bg-[#A8D5B1]', topW: 40, botW: 25 },
+};
+
+const FALLBACK_FUNNEL: FunnelStep[] = [
   {
     step: 1,
     title: '注册',
-    subtitle: 'Sign Up',
-    icon: UserPlus,
     users: 12480,
     pctOfTotal: 100,
-    stepCvr: null,
-    cumCvr: 100,
+    stepCVR: null,
+    cumCVR: 100,
     dropoff: null,
     dropoffPct: null,
-    color: 'bg-[#419466]',
-    topW: 100,
-    botW: 85,
   },
   {
     step: 2,
     title: 'Live Account',
-    subtitle: '开户',
-    icon: Contact,
     users: 9984,
     pctOfTotal: 80,
-    stepCvr: 80.0,
-    cumCvr: 80.0,
+    stepCVR: 80.0,
+    cumCVR: 80.0,
     dropoff: 2496,
     dropoffPct: 20.0,
-    color: 'bg-[#55a677]',
-    topW: 85,
-    botW: 70,
   },
   {
     step: 3,
     title: 'Live KYC',
-    subtitle: '完成KYC',
-    icon: FileCheck,
     users: 5990,
     pctOfTotal: 48,
-    stepCvr: 60.0,
-    cumCvr: 48.0,
+    stepCVR: 60.0,
+    cumCVR: 48.0,
     dropoff: 3994,
     dropoffPct: 20.0,
-    color: 'bg-[#69b888]',
-    topW: 70,
-    botW: 55,
   },
   {
     step: 4,
     title: 'FTD',
-    subtitle: '首次入金',
-    icon: Wallet,
     users: 2995,
     pctOfTotal: 24,
-    stepCvr: 50.0,
-    cumCvr: 24.0,
+    stepCVR: 50.0,
+    cumCVR: 24.0,
     dropoff: 2995,
     dropoffPct: 50.0,
-    color: 'bg-[#7dca99]',
-    topW: 55,
-    botW: 40,
   },
   {
     step: 5,
     title: 'FTT',
-    subtitle: '首次交易',
-    icon: BarChart2,
     users: 1497,
     pctOfTotal: 12,
-    stepCvr: 50.0,
-    cumCvr: 12.0,
+    stepCVR: 50.0,
+    cumCVR: 12.0,
     dropoff: 1498,
     dropoffPct: 50.0,
-    color: 'bg-[#a3e3bc]',
-    topW: 40,
-    botW: 25,
   },
 ];
 
 export default function AcquisitionEfficiency() {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const { data, loading, error } = useApi(fetchFunnel);
+
+  if (loading) return <SkeletonLoader />;
+  if (error) return <ApiError message={error} />;
+
+  const steps = data?.steps ?? FALLBACK_FUNNEL;
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
@@ -135,19 +129,17 @@ export default function AcquisitionEfficiency() {
 
       {/* Funnel Rows */}
       <div className="flex flex-col mb-6">
-        {funnelData.map((step, index) => {
-          const Icon = step.icon;
+        {steps.map((step, index) => {
+          const meta = STEP_META[step.step] ?? {
+            subtitle: '',
+            icon: UserPlus,
+            color: 'bg-[#60996D]',
+            topW: 50,
+            botW: 25,
+          };
+          const Icon = meta.icon;
           const isHovered = hoveredStep === index;
-
-          // 根据索引选择颜色，与 UserDistributionSunburst 中的色域对齐
-          const colors = [
-            'bg-[#60996D]',
-            'bg-[#72A87E]',
-            'bg-[#84B78F]',
-            'bg-[#96C6A0]',
-            'bg-[#A8D5B1]',
-          ];
-          const barColor = colors[index] || step.color;
+          const barColor = meta.color;
 
           return (
             <div
@@ -188,7 +180,7 @@ export default function AcquisitionEfficiency() {
                 </div>
                 <div>
                   <div className="text-sm font-bold text-gray-900 leading-tight">{step.title}</div>
-                  <div className="text-[10px] text-gray-500 mt-0.5">{step.subtitle}</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">{meta.subtitle}</div>
                 </div>
               </div>
 
@@ -197,7 +189,7 @@ export default function AcquisitionEfficiency() {
                 <div
                   className={`${barColor} h-14 flex flex-col items-center justify-center text-white transition-all duration-300 w-full max-w-[320px]`}
                   style={{
-                    clipPath: `polygon(${(100 - step.topW) / 2}% 0%, ${100 - (100 - step.topW) / 2}% 0%, ${100 - (100 - step.botW) / 2}% 100%, ${(100 - step.botW) / 2}% 100%)`,
+                    clipPath: `polygon(${(100 - meta.topW) / 2}% 0%, ${100 - (100 - meta.topW) / 2}% 0%, ${100 - (100 - meta.botW) / 2}% 100%, ${(100 - meta.botW) / 2}% 100%)`,
                   }}
                 >
                   <span className="text-lg font-bold leading-none mb-0.5">
@@ -209,17 +201,17 @@ export default function AcquisitionEfficiency() {
 
               {/* Col 3: Step CVR */}
               <div className="text-center font-bold text-sm">
-                {step.stepCvr ? (
+                {step.stepCVR ? (
                   <span
                     className={
-                      step.stepCvr >= 70
+                      step.stepCVR >= 70
                         ? 'text-emerald-400'
-                        : step.stepCvr > 50
+                        : step.stepCVR > 50
                           ? 'text-orange-500'
                           : 'text-rose-600'
                     }
                   >
-                    {step.stepCvr.toFixed(1)}%
+                    {step.stepCVR.toFixed(1)}%
                   </span>
                 ) : (
                   <span className="text-gray-400">—</span>
@@ -228,10 +220,10 @@ export default function AcquisitionEfficiency() {
 
               {/* Col 4: Cumulative CVR */}
               <div className="text-center font-bold text-sm">
-                {step.cumCvr === 100 ? (
+                {step.cumCVR === 100 ? (
                   <span className="text-gray-700">100%</span>
                 ) : (
-                  <span className="text-emerald-400">{step.cumCvr.toFixed(1)}%</span>
+                  <span className="text-emerald-400">{step.cumCVR.toFixed(1)}%</span>
                 )}
               </div>
 
