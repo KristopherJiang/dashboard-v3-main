@@ -1028,7 +1028,7 @@ export default function KPICards() {
           </span>
         </div>
 
-        <NetDepositChart scale={m} timeCtx={timeCtx} />
+        <NetDepositChart scale={fallbackMultiplier} timeCtx={timeCtx} />
       </CardWrapper>
 
       {/* 5. 总交易量Trading Volume */}
