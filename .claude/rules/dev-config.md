@@ -43,7 +43,8 @@ docker run -d --name dashboard-pgadmin -p 5050:80 \
 - Redis: `redis://localhost:6379`
 - ORM: Prisma 6，schema 在 `prisma/schema.prisma`
 - Migration: `npx prisma migrate dev`
-- 数据浏览: `npx prisma studio`
+- 数据浏览: `npx prisma studio --port 5555` → http://localhost:5555
+- 生成 Prisma Client: `npx prisma generate`
 
 ## 启动开发服务器
 ```bash
