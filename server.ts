@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dns from "node:dns";
+import { router as apiRouter } from "./src/server/routes/index.js";
+import { errorHandler } from "./src/server/middleware/errorHandler.js";
 
 // Ensure localhost resolves to ipv4 127.0.0.1
 dns.setDefaultResultOrder("ipv4first");
@@ -12,10 +14,13 @@ async function startServer() {
 
   app.use(express.json());
 
-  // API Route for healthcheck
+  // API Route for healthcheck (legacy)
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  // Mount API v1 router — all business endpoints under /api/v1/
+  app.use("/api/v1", apiRouter);
 
   // API Route to fetch real-time Sensor Tower sales and download estimates
   app.get("/api/sensortower/metrics", async (req, res) => {
@@ -97,6 +102,9 @@ async function startServer() {
       });
     }
   });
+
+  // Global error handler — must be registered after all API routes
+  app.use(errorHandler);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
