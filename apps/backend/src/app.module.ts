@@ -14,6 +14,7 @@ import { AsoModule } from './modules/aso/aso.module';
 import { MarketCommandModule } from './modules/market-command/market-command.module';
 import { AiModule } from './modules/ai/ai.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { SensorTowerModule } from './modules/sensor-tower/sensor-tower.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
     MarketCommandModule,
     AiModule,
     MarketingModule,
+    SensorTowerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
