@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "PC端营销数据 Dashboard — Exness/Vantage C-Level 管理层",
   "packageManager": "pnpm@10.13.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["prisma", "esbuild"]
+  },
   "scripts": {
     "dev": "turbo dev",
     "start": "docker compose up -d && sleep 2 && cd apps/backend && pnpm prisma studio --port 5555 & concurrently -n FE,BE -c cyan,green \"cd apps/frontend && pnpm run dev\" \"cd apps/backend && pnpm run dev\"",
