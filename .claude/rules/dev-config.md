@@ -48,6 +48,40 @@ pnpm db:reset       # 重置（清空数据）
 - Migration: `pnpm db:migrate`
 - 数据浏览: `pnpm db:studio` → http://localhost:5555
 
+## Prisma 工作流
+Prisma 是 ORM 工具（翻译官），不是数据库本身。它从 `schema.prisma` 生成 TypeScript 代码。
+
+**关键命令：**
+
+| 命令 | 作用 | 适用场景 |
+|------|------|---------|
+| `prisma migrate dev` | 生成迁移 + 执行 | 开发时修改 schema |
+| `prisma migrate dev --create-only` | 只生成 SQL，不执行 | 表已存在，避免重复创建 |
+| `prisma migrate deploy` | 执行所有未执行的迁移 | 新环境/生产环境 |
+| `prisma migrate resolve --applied` | 标记迁移为已执行 | 表已存在，只更新记录 |
+| `prisma generate` | 生成 TypeScript 类型 | 修改 schema 后（start:dev 自动执行） |
+| `prisma db pull` | 从数据库反向生成 schema | 数据库已有表，需要同步 schema |
+
+**迁移文件结构：**
+```
+prisma/migrations/
+├── 20260620030841_init/
+│   └── migration.sql    ← SQL 脚本（CREATE TABLE/INDEX）
+└── migration_lock.toml
+```
+
+**切换数据库（PostgreSQL → MySQL/SQLite）：**
+1. 改 `schema.prisma` 的 `provider`
+2. 改 `.env` 的 `DATABASE_URL`
+3. `prisma migrate dev` 重新生成
+
+**新电脑设置：**
+```bash
+docker compose up -d                    # 启动数据库
+cd apps/backend
+npx prisma migrate deploy               # 执行所有迁移
+```
+
 ## .env 文件
 - 后端: `apps/backend/.env`
 ```
