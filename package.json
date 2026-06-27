@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "turbo dev",
+    "start": "docker compose up -d && sleep 2 && cd apps/backend && pnpm prisma studio --port 5555 & concurrently -n FE,BE -c cyan,green \"cd apps/frontend && pnpm run dev\" \"cd apps/backend && pnpm run dev\"",
     "build": "turbo build",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
@@ -22,6 +23,7 @@
     "clean": "turbo clean"
   },
   "devDependencies": {
+    "concurrently": "^10.0.3",
     "playwright": "^1.61.0",
     "turbo": "^2.0.0"
   }
