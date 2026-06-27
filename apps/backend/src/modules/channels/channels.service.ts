@@ -3,7 +3,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getDateRange } from '../../common/utils/date-range';
-import { getRegionFilter } from '../../common/utils/region-filter-orm';
+import { getRegionFilter, buildRegionSql } from '../../common/utils/region-filter-orm';
 
 interface ChannelMetrics {
   newUsers: number;
@@ -51,14 +51,14 @@ export class ChannelsService {
     region: string,
   ): Promise<{ channels: ChannelNode[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionFilter = getRegionFilter(region);
+    const regionSql = await buildRegionSql(region);
 
     const rows: ChannelRow[] = await this.prisma.$queryRawUnsafe(`
       SELECT user_type, COUNT(*) AS cnt, SUM(ltv_30d) AS total_ltv
       FROM channel_ltv
       WHERE register_date >= $1 AND register_date <= $2
         AND user_type IS NOT NULL
-        ${this.buildRegionSql(region)}
+        ${regionSql}
       GROUP BY user_type
     `, new Date(startDate), new Date(endDate));
 
@@ -125,10 +125,5 @@ export class ChannelsService {
     ];
 
     return { channels };
-  }
-
-  private buildRegionSql(region: string): string {
-    if (!region || region === 'GLOBAL') return '';
-    return `AND region = '${region.replace(/'/g, "''")}'`;
   }
 }

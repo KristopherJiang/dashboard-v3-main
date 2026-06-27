@@ -21,7 +21,7 @@ export class UsersService {
     region: string,
   ): Promise<{ totalNewUsers: number; distribution: DistributionNode[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionFilter = getRegionFilter(region);
+    const regionFilter = await getRegionFilter(region);
 
     const whereClause = {
       date: { gte: new Date(startDate), lte: new Date(endDate) },

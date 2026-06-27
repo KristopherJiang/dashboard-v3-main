@@ -423,3 +423,32 @@ export async function fetchMarketingROI(
 ): Promise<{ weeks: WeeklyROI[]; totalSpend: number; totalRevenue: number; avgRoi: number }> {
   return apiFetch('marketing/roi', toQuery(timeRange, region));
 }
+
+// ============================================================
+// Regions — 地区/国家结构
+// ============================================================
+
+export interface RegionCountry {
+  id: string;
+  name: string;
+  en: string;
+  isHot?: boolean;
+}
+
+export interface RegionItem {
+  id: string;
+  label: string;
+  nameCn: string;
+  countries: RegionCountry[];
+}
+
+export interface FavoriteItem {
+  id: string;
+  label: string;
+  sub: string;
+  isHot?: boolean;
+}
+
+export async function fetchRegions(): Promise<{ regions: RegionItem[]; favorites: FavoriteItem[] }> {
+  return apiFetch('regions');
+}

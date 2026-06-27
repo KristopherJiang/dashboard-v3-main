@@ -35,7 +35,7 @@ export class FunnelService {
     region: string,
   ): Promise<{ steps: FunnelStep[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionFilter = getRegionFilter(region);
+    const regionFilter = await getRegionFilter(region);
 
     const result = await this.prisma.userFunnel.aggregate({
       where: {

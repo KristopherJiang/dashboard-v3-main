@@ -70,6 +70,22 @@ model FttRetention {
   @@map("ftt_retention")
 }
 
+model Region {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(32)
+  parentId   Int?     @map("parent_id")
+  nameEn     String   @map("name_en") @db.VarChar(128)
+  nameCn     String   @map("name_cn") @db.VarChar(128)
+  isHot      Boolean  @default(false) @map("is_hot")
+  isFavorite Boolean  @default(false) @map("is_favorite")
+  sortOrder  Int      @default(0) @map("sort_order")
+
+  parent     Region?  @relation("RegionChildren", fields: [parentId], references: [id])
+  children   Region[] @relation("RegionChildren")
+
+  @@map("regions")
+}
+
 model ChannelLtv {
   id           Int      @id @default(autoincrement())
   registerDate DateTime @map("register_date") @db.Date

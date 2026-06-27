@@ -15,6 +15,7 @@ import { MarketCommandModule } from './modules/market-command/market-command.mod
 import { AiModule } from './modules/ai/ai.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { SensorTowerModule } from './modules/sensor-tower/sensor-tower.module';
+import { RegionsModule } from './modules/regions/regions.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SensorTowerModule } from './modules/sensor-tower/sensor-tower.module';
     AiModule,
     MarketingModule,
     SensorTowerModule,
+    RegionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -26,7 +26,7 @@ export class MarketingService {
     avgRoi: number;
   }> {
     const { startDate, endDate } = getDateRange(timeRange);
-    const regionFilter = getRegionFilter(region);
+    const regionFilter = await getRegionFilter(region);
 
     // 按月聚合：net_deposit 作为 spend（营销支出代理），
     // trading_volume 作为 revenue（交易收入代理）

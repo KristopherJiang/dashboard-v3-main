@@ -1,25 +1,30 @@
-// Prisma ORM Region 过滤工具 — 返回 Prisma where 子句对象
+// Prisma ORM Region 过滤工具 — 从 regions 表动态解析
+
+import { resolveRegion } from './region-resolver';
 
 /**
- * 将前端 region 枚举映射为 where 条件对象。
- * GLOBAL 不加任何 region 过滤。
- * 返回值可与任何包含 region/country 字段的 Prisma where 对象展开合并且类型兼容。
+ * 将前端 region code 映射为 Prisma where 子句。
+ * 数据从 regions 表读取，无需硬编码。
  */
-export function getRegionFilter(region: string): Record<string, string> {
-  switch (region) {
-    case 'GLOBAL':
-      return {};
-    case 'ASIA_VN':
-      return { region: 'Asia', country: 'Vietnam' };
-    case 'EU_UK':
-      return { region: 'EU' };
-    case 'ASIA_IN':
-      return { region: 'Asia', country: 'India' };
-    case 'MENA_AE':
-      return { region: 'MENA' };
-    case 'GS_AU':
-      return { region: 'GS-Others' };
-    default:
-      return {};
+export async function getRegionFilter(region: string): Promise<Record<string, string>> {
+  if (!region || region === 'GLOBAL') return {};
+  const resolved = await resolveRegion(region);
+  if (!resolved) return {};
+  const filter: Record<string, string> = { region: resolved.region };
+  if (resolved.country) filter.country = resolved.country;
+  return filter;
+}
+
+/**
+ * 构建 raw SQL 的 region WHERE 片段（用于 $queryRawUnsafe）
+ */
+export async function buildRegionSql(region: string): Promise<string> {
+  if (!region || region === 'GLOBAL') return '';
+  const resolved = await resolveRegion(region);
+  if (!resolved) return '';
+  let sql = `AND region = '${resolved.region.replace(/'/g, "''")}'`;
+  if (resolved.country) {
+    sql += ` AND country = '${resolved.country.replace(/'/g, "''")}'`;
   }
+  return sql;
 }

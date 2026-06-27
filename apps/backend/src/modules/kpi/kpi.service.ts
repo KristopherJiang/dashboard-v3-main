@@ -3,7 +3,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getDateRange } from '../../common/utils/date-range';
-import { getRegionFilter } from '../../common/utils/region-filter-orm';
+import { getRegionFilter, buildRegionSql } from '../../common/utils/region-filter-orm';
 
 export interface KPIChartPoint {
   month: string;
@@ -43,14 +43,15 @@ export class KpiService {
     region: string,
   ): Promise<{ cards: KPICard[] }> {
     const { startDate, endDate } = getDateRange(timeRange);
+    const regionFilter = await getRegionFilter(region);
 
     // ---- 汇总 KPI (使用 Prisma aggregate，不会 OOM) ----
     const dateWhere = {
       date: { gte: new Date(startDate), lte: new Date(endDate) },
-      ...getRegionFilter(region),
+      ...regionFilter,
     };
 
-    const [aggResult, retentionResult] = await Promise.all([
+    const [aggResult, retentionResult, conversionResult] = await Promise.all([
       this.prisma.dailyAggregate.aggregate({
         where: dateWhere,
         _sum: {
@@ -64,9 +65,16 @@ export class KpiService {
       this.prisma.fttRetention.aggregate({
         where: {
           fttDate: { gte: new Date(startDate), lte: new Date(endDate) },
-          ...getRegionFilter(region),
+          ...regionFilter,
         },
         _sum: { fttUserId: true, fttTrade30d: true },
+      }),
+      this.prisma.ftdFttConversion.aggregate({
+        where: {
+          ftdDate: { gte: new Date(startDate), lte: new Date(endDate) },
+          ...regionFilter,
+        },
+        _sum: { ftdUserId: true, ftdFtt7d: true },
       }),
     ]);
 
@@ -87,9 +95,13 @@ export class KpiService {
       registration > 0
         ? parseFloat(((ftd / registration) * 100).toFixed(1))
         : 0;
+
+    // FTD→FTT 转化率：使用 ftd_ftt_conversion 表（cohort 转化，7天内）
+    const convFtd = conversionResult._sum?.ftdUserId ?? 0;
+    const convFtt7d = conversionResult._sum?.ftdFtt7d ?? 0;
     const ftdFttCvr =
-      ftd > 0
-        ? Math.min(parseFloat(((ftt / ftd) * 100).toFixed(1)), 100)
+      convFtd > 0
+        ? Math.min(parseFloat(((convFtt7d / convFtd) * 100).toFixed(1)), 100)
         : 0;
 
     // ---- 根据时间范围决定聚合粒度 ----
@@ -112,7 +124,7 @@ export class KpiService {
       labelExpr = "TO_CHAR(date, 'YYYY-MM')";
     }
 
-    const regionSql = this.buildRegionSql(region);
+    const regionSql = await buildRegionSql(region);
 
     const monthlyRows: MonthlyRow[] = await this.prisma.$queryRawUnsafe(`
       SELECT
@@ -163,6 +175,24 @@ export class KpiService {
       });
     }
 
+    // FTD→FTT 转化率月度数据（从 ftd_ftt_conversion 表）
+    const convRows: { month: string; ftd_total: bigint; ftt_7d: bigint }[] =
+      await this.prisma.$queryRawUnsafe(`
+        SELECT
+          ${labelExpr.replace(/date/g, 'ftd_date')} AS month,
+          SUM(ftd_user_id) AS ftd_total,
+          SUM(ftd_ftt_7d) AS ftt_7d
+        FROM ftd_ftt_conversion
+        WHERE ftd_date >= $1 AND ftd_date <= $2 ${regionSql}
+        GROUP BY ${groupExpr.replace(/date/g, 'ftd_date')}, ${labelExpr.replace(/date/g, 'ftd_date')}
+        ORDER BY ${groupExpr.replace(/date/g, 'ftd_date')} ASC
+      `, new Date(startDate), new Date(endDate));
+
+    const convMap = new Map<string, { ftd: number; ftt7d: number }>();
+    for (const r of convRows) {
+      convMap.set(r.month, { ftd: Number(r.ftd_total), ftt7d: Number(r.ftt_7d) });
+    }
+
     // ---- 构建 chartData ----
     const buildChart = (field: keyof (typeof monthly)[0]): KPIChartPoint[] =>
       monthly.map((row, i) => ({
@@ -189,11 +219,14 @@ export class KpiService {
     });
 
     const ftdFttCvrChart: KPIChartPoint[] = monthly.map((row, i) => {
-      const val = row.ftd > 0
-        ? Math.min(parseFloat(((row.ftt / row.ftd) * 100).toFixed(1)), 100)
+      const cm = convMap.get(row.month);
+      const val = cm && cm.ftd > 0
+        ? Math.min(parseFloat(((cm.ftt7d / cm.ftd) * 100).toFixed(1)), 100)
         : 0;
-      const prev = i > 0 && monthly[i - 1].ftd > 0
-        ? Math.min(parseFloat(((monthly[i - 1].ftt / monthly[i - 1].ftd) * 100).toFixed(1)), 100)
+      const prevRow = i > 0 ? monthly[i - 1] : null;
+      const prevCm = prevRow ? convMap.get(prevRow.month) : null;
+      const prev = prevCm && prevCm.ftd > 0
+        ? Math.min(parseFloat(((prevCm.ftt7d / prevCm.ftd) * 100).toFixed(1)), 100)
         : 0;
       return { month: row.month, current: val, previous: prev };
     });
@@ -240,10 +273,5 @@ export class KpiService {
     ];
 
     return { cards };
-  }
-
-  private buildRegionSql(region: string): string {
-    if (!region || region === 'GLOBAL') return '';
-    return `AND region = '${region.replace(/'/g, "''")}'`;
   }
 }

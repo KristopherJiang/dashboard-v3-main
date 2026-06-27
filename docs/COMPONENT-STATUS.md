@@ -2,17 +2,18 @@
 
 > 最后更新：2026-06-27
 
-## 已对接真实数据（5/14）
+## 已对接真实数据（6/14）
 
 | # | 组件 | 接口 | 数据表 | 数据源 xlsx | 备注 |
 |---|------|------|--------|-----------|------|
-| 1 | KPICards（8张指标卡片） | `GET /api/v1/kpi` | `daily_aggregates` + `ftt_retention` | 聚合数据2 + UID颗粒度 + 需求特化1 | ✅ |
+| 1 | KPICards（8张指标卡片） | `GET /api/v1/kpi` | `daily_aggregates` + `ftt_retention` + `ftd_ftt_conversion` | 聚合数据2 + UID颗粒度 + 需求特化1 + 用户维表2 | ✅ |
 | 2 | ChannelEfficiencyMatrix（渠道效率矩阵） | `GET /api/v1/channels` | `channel_ltv` | 需求特化2 + UID颗粒度 | ✅ |
 | 3 | AcquisitionEfficiency（获客漏斗） | `GET /api/v1/funnel` | `user_funnel` | 用户维表1 | ✅ |
 | 4 | UserDistributionSunburst（用户来源旭日图） | `GET /api/v1/users/distribution` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
 | 5 | MarketingROI（营销ROI） | `GET /api/v1/marketing/roi` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+| 6 | GlobalRegionPicker（地区选择器） | `GET /api/v1/regions` | `regions` | 手动配置 | ✅ 从数据库读取地区/国家结构 |
 
-## 未对接 / 使用 Mock 数据（9/14）
+## 未对接 / 使用 Mock 数据（8/14）
 
 | # | 组件 | 接口 | 缺什么 |
 |---|------|------|--------|
@@ -34,7 +35,8 @@
 | `ftt_retention` | 2025-01 ~ 2025-04 | KPICards (D30留存) | 需求特化1 |
 | `channel_ltv` | 2025-01 ~ 2026-06 | ChannelEfficiencyMatrix | 需求特化2 + UID颗粒度 |
 | `user_funnel` | 2025-01 ~ 2025-04 | AcquisitionEfficiency | 用户维表1 |
-| `ftd_ftt_conversion` | 2025-01 ~ 2026-06 | **无组件使用** | 用户维表2 + UID颗粒度 |
+| `ftd_ftt_conversion` | 2025-01 ~ 2026-06 | KPICards (FTD→FTT转化率) | 用户维表2 + UID颗粒度 |
+| `regions` | 配置数据 | GlobalRegionPicker | 手动配置（70个国家） |
 
 ## 数据导入记录
 
@@ -43,6 +45,7 @@
 | 2026-06-27 | `scripts/import-data.py` | 全部5张表 | 5个聚合xlsx | 399,025 |
 | 2026-06-27 | `scripts/import-uid-to-daily.py` | `daily_aggregates` | UID颗粒度 | 10,454 |
 | 2026-06-27 | `scripts/import-uid-to-all.py` | `channel_ltv` + `ftd_ftt_conversion` | UID颗粒度 | 10,639 |
+| 2026-06-27 | `scripts/seed-regions.py` | `regions` | 前端 REGION_STRUCTURE 配置 | 77 |
 
 ## 已知问题
 
