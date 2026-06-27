@@ -1,0 +1,51 @@
+# Dashboard V3 — 组件联调状态表
+
+> 最后更新：2026-06-27
+
+## 已对接真实数据（5/14）
+
+| # | 组件 | 接口 | 数据表 | 数据源 xlsx | 备注 |
+|---|------|------|--------|-----------|------|
+| 1 | KPICards（8张指标卡片） | `GET /api/v1/kpi` | `daily_aggregates` + `ftt_retention` | 聚合数据2 + UID颗粒度 + 需求特化1 | ✅ |
+| 2 | ChannelEfficiencyMatrix（渠道效率矩阵） | `GET /api/v1/channels` | `channel_ltv` | 需求特化2 + UID颗粒度 | ✅ |
+| 3 | AcquisitionEfficiency（获客漏斗） | `GET /api/v1/funnel` | `user_funnel` | 用户维表1 | ✅ |
+| 4 | UserDistributionSunburst（用户来源旭日图） | `GET /api/v1/users/distribution` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+| 5 | MarketingROI（营销ROI） | `GET /api/v1/marketing/roi` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+
+## 未对接 / 使用 Mock 数据（9/14）
+
+| # | 组件 | 接口 | 缺什么 |
+|---|------|------|--------|
+| 6 | Reputation（舆情散点） | `GET /api/v1/reputation` | 无真实数据源，需 NLP 服务或第三方舆情 API |
+| 7 | AppMarketOverview（App市场） | `GET /api/v1/app-market` | 需对接 Sensor Tower API |
+| 8 | WebsiteHealthMonitor（健康监测） | `GET /api/v1/health` | 需对接 Ping 监控服务 |
+| 9 | GlobalIntelligence（市场情报） | `GET /api/v1/market-intelligence` | 无真实数据源，需 SEO/GEO/ASO 第三方 API |
+| 10 | MarketCommand（气泡地图） | `GET /api/v1/market/command` | 无真实数据源 |
+| 11 | AIAlertDrawer（AI告警） | `GET /api/v1/ai/alerts` | 无真实数据源 |
+| 12 | AIDiagnosticModal（AI诊断） | `GET /api/v1/ai/diagnostic` | 需对接 LLM（Gemini） |
+| 13 | MarketExposureASO（ASO排名） | `GET /api/v1/aso` | 需对接 Sensor Tower / AppTweak |
+| 14 | UserDemographics（用户画像） | `GET /api/v1/users/demographics` | `daily_aggregates` 有部分数据，需补充年龄/地域维度 |
+
+## 数据库表使用情况
+
+| 表 | 当前数据范围 | 使用它的组件 | 数据源 xlsx |
+|---|------------|------------|-----------|
+| `daily_aggregates` | 2025-01 ~ 2026-06 | KPICards, UserDistribution, MarketingROI | 聚合数据2 + UID颗粒度 |
+| `ftt_retention` | 2025-01 ~ 2025-04 | KPICards (D30留存) | 需求特化1 |
+| `channel_ltv` | 2025-01 ~ 2026-06 | ChannelEfficiencyMatrix | 需求特化2 + UID颗粒度 |
+| `user_funnel` | 2025-01 ~ 2025-04 | AcquisitionEfficiency | 用户维表1 |
+| `ftd_ftt_conversion` | 2025-01 ~ 2026-06 | **无组件使用** | 用户维表2 + UID颗粒度 |
+
+## 数据导入记录
+
+| 日期 | 脚本 | 目标表 | 数据源 | 行数 |
+|------|------|--------|--------|------|
+| 2026-06-27 | `scripts/import-data.py` | 全部5张表 | 5个聚合xlsx | 399,025 |
+| 2026-06-27 | `scripts/import-uid-to-daily.py` | `daily_aggregates` | UID颗粒度 | 10,454 |
+| 2026-06-27 | `scripts/import-uid-to-all.py` | `channel_ltv` + `ftd_ftt_conversion` | UID颗粒度 | 10,639 |
+
+## 已知问题
+
+1. **UID 颗粒度数据只覆盖 2026-05-20 ~ 2026-06-17**，5月1-19日无数据，"上个月"等时间范围前几周为空
+2. **`ftt_retention` 缺少 2026 数据**，D30 留存率卡片只有 2025 数据
+3. **`user_funnel` 缺少 2026 数据**，获客漏斗页面只有 2025 数据

@@ -92,12 +92,31 @@ export class KpiService {
         ? Math.min(parseFloat(((ftt / ftd) * 100).toFixed(1)), 100)
         : 0;
 
-    // ---- 月度聚合 (SQL 层面完成，避免 fetch 200K 行到内存) ----
+    // ---- 根据时间范围决定聚合粒度 ----
+    const diffDays = Math.round(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000,
+    );
+    let granularity: 'daily' | 'weekly' | 'monthly' = 'monthly';
+    let groupExpr: string;
+    let labelExpr: string;
+    if (diffDays <= 1) {
+      granularity = 'daily';
+      groupExpr = 'date';
+      labelExpr = "TO_CHAR(date, 'MM-DD')";
+    } else if (diffDays <= 84) {
+      granularity = 'weekly';
+      groupExpr = "DATE_TRUNC('week', date)";
+      labelExpr = "CONCAT('W', EXTRACT(WEEK FROM date) - EXTRACT(WEEK FROM DATE_TRUNC('month', date)) + 1)";
+    } else {
+      groupExpr = "DATE_TRUNC('month', date)";
+      labelExpr = "TO_CHAR(date, 'YYYY-MM')";
+    }
+
     const regionSql = this.buildRegionSql(region);
 
     const monthlyRows: MonthlyRow[] = await this.prisma.$queryRawUnsafe(`
       SELECT
-        TO_CHAR(date, 'YYYY-MM') AS month,
+        ${labelExpr} AS month,
         SUM(register_cnt) AS registration,
         SUM(ftd_cnt) AS ftd,
         SUM(ftt_cnt) AS ftt,
@@ -105,8 +124,8 @@ export class KpiService {
         SUM(trading_volume) AS "tradingVolume"
       FROM daily_aggregates
       WHERE date >= $1 AND date <= $2 ${regionSql}
-      GROUP BY TO_CHAR(date, 'YYYY-MM')
-      ORDER BY month ASC
+      GROUP BY ${groupExpr}, ${labelExpr}
+      ORDER BY ${groupExpr} ASC
     `, new Date(startDate), new Date(endDate));
 
     const monthly = monthlyRows.map((r) => ({
@@ -118,16 +137,22 @@ export class KpiService {
       tradingVolume: Number(r.tradingVolume),
     }));
 
-    // 留存月度聚合
+    // 留存聚合（同样粒度）
+    const retGroupExpr = granularity === 'weekly'
+      ? "DATE_TRUNC('week', ftt_date)"
+      : granularity === 'daily'
+        ? 'ftt_date'
+        : "DATE_TRUNC('month', ftt_date)";
+
     const retentionRows: RetentionMonthlyRow[] = await this.prisma.$queryRawUnsafe(`
       SELECT
-        TO_CHAR(ftt_date, 'YYYY-MM') AS month,
+        ${labelExpr.replace(/date/g, 'ftt_date')} AS month,
         SUM(ftt_user_id) AS total,
         SUM(ftt_trade_30d) AS retained
       FROM ftt_retention
       WHERE ftt_date >= $1 AND ftt_date <= $2 ${regionSql}
-      GROUP BY TO_CHAR(ftt_date, 'YYYY-MM')
-      ORDER BY month ASC
+      GROUP BY ${retGroupExpr}, ${labelExpr.replace(/date/g, 'ftt_date')}
+      ORDER BY ${retGroupExpr} ASC
     `, new Date(startDate), new Date(endDate));
 
     const retentionMap = new Map<string, { total: number; retained: number }>();

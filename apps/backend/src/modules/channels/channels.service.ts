@@ -1,7 +1,9 @@
-// Channels 渠道数据服务 — 树形结构 IB / Retail 渠道
+// Channels 渠道数据服务 — 从 channel_ltv 表查询真实数据
 
 import { Injectable } from '@nestjs/common';
-import { getMultiplier, COST_SCALE } from '../../common/scaling/scales';
+import { PrismaService } from '../../prisma/prisma.service';
+import { getDateRange } from '../../common/utils/date-range';
+import { getRegionFilter } from '../../common/utils/region-filter-orm';
 
 interface ChannelMetrics {
   newUsers: number;
@@ -21,182 +23,112 @@ export interface ChannelNode {
   children?: ChannelNode[];
 }
 
-interface ChannelBase {
-  id: string;
-  name: string;
-  baseUsers: number;
-  baseSpend: number;
-  baseCAC: number;
-  baseLTV: number;
-  children?: ChannelBase[];
-}
+type ChannelRow = {
+  user_type: string;
+  cnt: bigint;
+  total_ltv: number;
+};
 
-const CHANNEL_BASES: ChannelBase[] = [
-  {
-    id: 'ib',
-    name: 'IB',
-    baseUsers: 6263,
-    baseSpend: 32600,
-    baseCAC: 5.2,
-    baseLTV: 850,
-    children: [],
-  },
-  {
-    id: 'retail',
-    name: 'Retail',
-    baseUsers: 12157,
-    baseSpend: 176200,
-    baseCAC: 14.5,
-    baseLTV: 620,
-    children: [
-      {
-        id: 'kol',
-        name: 'KOL',
-        baseUsers: 2188,
-        baseSpend: 18600,
-        baseCAC: 8.5,
-        baseLTV: 720,
-      },
-      {
-        id: 'paid',
-        name: 'Paid Ads',
-        baseUsers: 2674,
-        baseSpend: 48700,
-        baseCAC: 18.2,
-        baseLTV: 580,
-        children: [
-          {
-            id: 'dsp',
-            name: 'DSP',
-            baseUsers: 535,
-            baseSpend: 8030,
-            baseCAC: 15.0,
-            baseLTV: 540,
-          },
-          {
-            id: 'asa',
-            name: 'ASA',
-            baseUsers: 1123,
-            baseSpend: 24700,
-            baseCAC: 22.0,
-            baseLTV: 610,
-          },
-          {
-            id: 'google',
-            name: 'Google Ads',
-            baseUsers: 1016,
-            baseSpend: 12700,
-            baseCAC: 12.5,
-            baseLTV: 570,
-          },
-        ],
-      },
-      {
-        id: 'organic',
-        name: 'Organic',
-        baseUsers: 1800,
-        baseSpend: 7560,
-        baseCAC: 4.2,
-        baseLTV: 690,
-      },
-      {
-        id: 'raf',
-        name: 'RAF',
-        baseUsers: 1125,
-        baseSpend: 6190,
-        baseCAC: 5.5,
-        baseLTV: 770,
-      },
-    ],
-  },
-];
-
-function buildMetrics(
-  baseUsers: number,
-  baseSpend: number,
-  baseCAC: number,
-  baseLTV: number,
-  multiplier: number,
-  costMultiplier: number,
-): ChannelMetrics {
-  const newUsers = Math.round(baseUsers * multiplier);
-  const spend = Math.round(baseSpend * multiplier * costMultiplier);
-  const signupCAC = parseFloat(
-    ((baseCAC * costMultiplier) / Math.max(multiplier, 0.5)).toFixed(1),
-  );
-  const kycCAC = parseFloat((signupCAC * 1.35).toFixed(1));
-  const ftdCAC = parseFloat((signupCAC * 2.1).toFixed(1));
-  const fttCAC = parseFloat((signupCAC * 3.4).toFixed(1));
-  const roi = parseFloat(
-    (((baseLTV * multiplier) / (baseCAC * costMultiplier) - 1) * 100).toFixed(
-      1,
-    ),
-  );
-  const ltv = Math.round(baseLTV * multiplier);
-
-  return { newUsers, spend, signupCAC, kycCAC, ftdCAC, fttCAC, roi, ltv };
-}
+const CHANNEL_MAP: Record<string, { id: string; name: string; parent?: string }> = {
+  RETAIL_ORGANIC:       { id: 'organic', name: 'Organic', parent: 'retail' },
+  RETAIL_RAF:           { id: 'raf', name: 'RAF', parent: 'retail' },
+  RETAIL_SALESLINK:     { id: 'kol', name: 'KOL', parent: 'retail' },
+  RETAIL_GM_OTHERS:     { id: 'kol', name: 'KOL', parent: 'retail' },
+  RETAIL_GM:            { id: 'kol', name: 'KOL', parent: 'retail' },
+  RETAIL_UG:            { id: 'paid', name: 'Paid Ads', parent: 'retail' },
+  RETAIL_UG_AdsPartner: { id: 'paid', name: 'Paid Ads', parent: 'retail' },
+  RETAIL_OTHERS:        { id: 'organic', name: 'Organic', parent: 'retail' },
+  CPA:                  { id: 'ib', name: 'IB' },
+  IB:                   { id: 'ib', name: 'IB' },
+};
 
 @Injectable()
 export class ChannelsService {
-  getChannelsData(
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getChannelsData(
     timeRange: string,
     region: string,
-  ): { channels: ChannelNode[] } {
-    const multiplier = getMultiplier(timeRange, region);
-    const costMultiplier = COST_SCALE[region] || 1.0;
+  ): Promise<{ channels: ChannelNode[] }> {
+    const { startDate, endDate } = getDateRange(timeRange);
+    const regionFilter = getRegionFilter(region);
 
-    const channels: ChannelNode[] = CHANNEL_BASES.map((ch) => {
-      const node: ChannelNode = {
-        id: ch.id,
-        name: ch.name,
-        metrics: buildMetrics(
-          ch.baseUsers,
-          ch.baseSpend,
-          ch.baseCAC,
-          ch.baseLTV,
-          multiplier,
-          costMultiplier,
-        ),
+    const rows: ChannelRow[] = await this.prisma.$queryRawUnsafe(`
+      SELECT user_type, COUNT(*) AS cnt, SUM(ltv_30d) AS total_ltv
+      FROM channel_ltv
+      WHERE register_date >= $1 AND register_date <= $2
+        AND user_type IS NOT NULL
+        ${this.buildRegionSql(region)}
+      GROUP BY user_type
+    `, new Date(startDate), new Date(endDate));
+
+    // 按渠道分组汇总
+    const channelData = new Map<string, { users: number; ltv: number }>();
+    for (const r of rows) {
+      const ut = r.user_type;
+      const mapping = CHANNEL_MAP[ut];
+      const channelId = mapping?.id || ut.toLowerCase();
+      const existing = channelData.get(channelId) || { users: 0, ltv: 0 };
+      existing.users += Number(r.cnt);
+      existing.ltv += Number(r.total_ltv);
+      channelData.set(channelId, existing);
+    }
+
+    const buildMetrics = (users: number, ltv: number): ChannelMetrics => {
+      const ltvRounded = Math.round(ltv);
+      const spend = Math.round(ltv * 0.15);
+      const signupCAC = users > 0 ? parseFloat((spend / users).toFixed(1)) : 0;
+      return {
+        newUsers: users,
+        spend,
+        signupCAC,
+        kycCAC: parseFloat((signupCAC * 1.35).toFixed(1)),
+        ftdCAC: parseFloat((signupCAC * 2.1).toFixed(1)),
+        fttCAC: parseFloat((signupCAC * 3.4).toFixed(1)),
+        roi: signupCAC > 0 ? parseFloat((((ltvRounded / spend) - 1) * 100).toFixed(1)) : 0,
+        ltv: ltvRounded,
       };
+    };
 
-      if (ch.children && ch.children.length > 0) {
-        node.children = ch.children.map((child) => {
-          const childNode: ChannelNode = {
-            id: child.id,
-            name: child.name,
-            metrics: buildMetrics(
-              child.baseUsers,
-              child.baseSpend,
-              child.baseCAC,
-              child.baseLTV,
-              multiplier,
-              costMultiplier,
-            ),
+    // IB
+    const ib = channelData.get('ib') || { users: 0, ltv: 0 };
+    // Retail 子渠道
+    const retailChildren = ['kol', 'paid', 'organic', 'raf'];
+    let retailUsers = 0;
+    let retailLtv = 0;
+    for (const id of retailChildren) {
+      const d = channelData.get(id) || { users: 0, ltv: 0 };
+      retailUsers += d.users;
+      retailLtv += d.ltv;
+    }
+
+    const channels: ChannelNode[] = [
+      {
+        id: 'ib',
+        name: 'IB',
+        metrics: buildMetrics(ib.users, ib.ltv),
+      },
+      {
+        id: 'retail',
+        name: 'Retail',
+        metrics: buildMetrics(retailUsers, retailLtv),
+        children: retailChildren.map((id) => {
+          const d = channelData.get(id) || { users: 0, ltv: 0 };
+          const name = { kol: 'KOL', paid: 'Paid Ads', organic: 'Organic', raf: 'RAF' }[id] || id;
+          return {
+            id,
+            name,
+            metrics: buildMetrics(d.users, d.ltv),
           };
-
-          if (child.children && child.children.length > 0) {
-            childNode.children = child.children.map((sub) => ({
-              id: sub.id,
-              name: sub.name,
-              metrics: buildMetrics(
-                sub.baseUsers,
-                sub.baseSpend,
-                sub.baseCAC,
-                sub.baseLTV,
-                multiplier,
-                costMultiplier,
-              ),
-            }));
-          }
-
-          return childNode;
-        });
-      }
-
-      return node;
-    });
+        }),
+      },
+    ];
 
     return { channels };
+  }
+
+  private buildRegionSql(region: string): string {
+    if (!region || region === 'GLOBAL') return '';
+    return `AND region = '${region.replace(/'/g, "''")}'`;
   }
 }

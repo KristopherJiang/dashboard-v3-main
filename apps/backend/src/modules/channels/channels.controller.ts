@@ -8,7 +8,7 @@ export class ChannelsController {
 
   @Get()
   async getChannels(@Query() query: BaseQueryDto) {
-    return this.channelsService.getChannelsData(
+    return await this.channelsService.getChannelsData(
       query.timeRange ?? 'mtd',
       query.region ?? 'GLOBAL',
     );
