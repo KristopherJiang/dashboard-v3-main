@@ -887,14 +887,14 @@ export default function KPICards() {
 
   // 核心数值：从 API 读取或 fallback（API 有数据时 fallback 不生效）
   const fallbackMultiplier = 1;
-  const regVal = regCard?.value ?? Math.floor(12480 * fallbackMultiplier).toLocaleString();
-  const ftdVal = ftdCard?.value ?? Math.floor(2995 * fallbackMultiplier).toLocaleString();
-  const fttVal = fttCard?.value ?? Math.floor(1497 * fallbackMultiplier).toLocaleString();
-  const depVal = depCard?.value ?? `$${Math.floor(1542060 * fallbackMultiplier).toLocaleString()}`;
-  const volVal = volCard?.value ?? `$${Math.floor(15420600 * fallbackMultiplier).toLocaleString()}`;
-  const cv1Val = cv1Card?.value ?? '24.0%';
-  const cv2Val = cv2Card?.value ?? '50.0%';
-  const retVal = retCard?.value ?? '20.0%';
+  const regVal = regCard ? Number(regCard.value).toLocaleString() : Math.floor(12480 * fallbackMultiplier).toLocaleString();
+  const ftdVal = ftdCard ? Number(ftdCard.value).toLocaleString() : Math.floor(2995 * fallbackMultiplier).toLocaleString();
+  const fttVal = fttCard ? Number(fttCard.value).toLocaleString() : Math.floor(1497 * fallbackMultiplier).toLocaleString();
+  const depVal = depCard ? `$${Number(depCard.value).toLocaleString()}` : `$${Math.floor(1542060 * fallbackMultiplier).toLocaleString()}`;
+  const volVal = volCard ? `$${Number(volCard.value).toLocaleString()}` : `$${Math.floor(15420600 * fallbackMultiplier).toLocaleString()}`;
+  const cv1Val = cv1Card ? `${cv1Card.value}%` : '24.0%';
+  const cv2Val = cv2Card ? `${cv2Card.value}%` : '50.0%';
+  const retVal = retCard ? `${retCard.value}%` : '20.0%';
 
   // Loading / Error 状态
   if (kpiLoading) {

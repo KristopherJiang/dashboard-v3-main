@@ -1,6 +1,6 @@
 // API 客户端封装 — 统一 fetch 请求、错误处理和响应解析
 
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 /** 统一 API 响应结构 */
 interface ApiResponse<T> {
@@ -61,9 +61,9 @@ export interface KPIChartPoint {
 
 export interface KPICard {
   key: string;
-  value: string;
-  trendPoP: string;
-  trendYoY: string;
+  value: number;
+  trendPoP: number;
+  trendYoY: number;
   chartData: KPIChartPoint[];
 }
 

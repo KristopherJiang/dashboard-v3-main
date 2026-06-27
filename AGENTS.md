@@ -1,130 +1,155 @@
-# Dashboard V3 — 项目指令
+# Dashboard V3 — Agent Instructions
 
-## 项目概述
+## Project
 
-PC 端营销数据 Dashboard，服务 Exness/Vantage 两家券商的 C-Level 管理层。
-前端 UI 已完成（React 19），当前目标：**开发后端 API 并完成前后端联调**。
+PC端营销数据 Dashboard for Exness/Vantage C-Level executives.
+pnpm monorepo (Turborepo) with two active apps:
 
-完整架构文档：`docs/ARCHITECTURE.md`
+| App | Path | Stack | Port |
+|-----|------|-------|------|
+| Frontend | `apps/frontend/` | React 19 + Vite 6 + Tailwind 4 + Recharts 3 | 5173 |
+| Backend | `apps/backend/` | NestJS 11 + Prisma 6 + PostgreSQL 16 + Redis 7 | 3000 |
 
-## 技术栈
+`apps/dashboard-v3-main/` is a legacy single-app — ignore it.
 
-| 层 | 技术 |
-|----|------|
-| 前端 | React 19 + Vite 6 + Tailwind 4 + Recharts 3 |
-| 后端 | Express 5 + TypeScript 5.8 |
-| 数据库 | PostgreSQL 16 + Prisma 6 |
-| 缓存 | Redis 7 (ioredis) |
-| 验证 | Zod |
-| AI | Google Gemini (`@google/genai`) |
+Full architecture doc: `docs/ARCHITECTURE.md` (aspirational; actual code may differ).
 
-## 开发命令
+## Commands
+
+Package manager is **pnpm** (10.13.1). Do not use npm.
 
 ```bash
-npm run dev          # 启动开发服务器 (tsx server.ts)
-npm run build        # 生产构建
-npm run typecheck    # TypeScript 类型检查
-npm run lint         # ESLint 检查
-npm run lint:fix     # ESLint 自动修复
-npm run format       # Prettier 格式化
-npm run format:check # Prettier 格式检查
-npm run check        # 全部检查 (typecheck + lint + format)
+pnpm dev            # Turborepo: starts frontend + backend concurrently
+pnpm build          # Turborepo build all
+pnpm test           # Turborepo test all
+pnpm typecheck      # TypeScript check all
+pnpm lint           # ESLint all
+pnpm format:check   # Prettier check all
+pnpm check          # typecheck + lint + format:check combined
+
+# Single app
+cd apps/frontend && pnpm dev
+cd apps/backend && pnpm dev          # runs: prisma generate && nest start --watch
+
+# Database
+pnpm db:up          # docker compose up -d (PostgreSQL 16 + Redis 7)
+pnpm db:down        # docker compose down
+pnpm db:reset       # docker compose down -v && up -d (destroys data)
+pnpm db:migrate     # cd apps/backend && pnpm prisma migrate dev
+pnpm db:studio      # Prisma Studio at http://localhost:5555
+
+# E2E
+pnpm e2e            # Playwright (Edge, headed, slowMo=500ms, workers=1)
 ```
 
-## 目录结构约定
+### Verification order
 
-```
-src/
-├── server/           # 后端代码
-│   ├── routes/       # 路由定义 + Zod 验证
-│   ├── services/     # 业务逻辑
-│   ├── db/           # Prisma + Redis 客户端
-│   ├── middleware/    # Express 中间件
-│   ├── data/         # 缩放系数、种子数据
-│   └── utils/        # 工具函数
-├── components/       # 前端组件（14 个模块）
-├── lib/              # 前端工具（api.ts, DashboardContext）
-└── main.tsx          # 入口
-```
+`typecheck → lint → format:check → build` (CI runs this sequence).
 
-## API 开发规范
+### Single test
 
-每个 API 端点必须遵循三层分离：
+```bash
+# Backend (Jest)
+cd apps/backend && pnpm test                    # all
+cd apps/backend && pnpm test -- kpi.service     # pattern match
 
-1. **路由层** (`routes/xxx.routes.ts`) — 路由定义 + Zod 参数校验
-2. **服务层** (`services/xxx.service.ts`) — 业务逻辑 + 数据查询
-3. **注册** (`routes/index.ts`) — 在主路由中注册
-
-### 统一响应格式
-
-```typescript
-// 成功
-{ success: true, data: { ... }, meta: { timestamp, region, timeRange } }
-// 失败
-{ success: false, error: { code: string, message: string } }
+# Frontend (Vitest)
+cd apps/frontend && pnpm test
 ```
 
-### 通用查询参数
+## Architecture
 
-所有 GET 接口支持：`timeRange`, `region`, `startDate`, `endDate`, `granularity`
+### Backend (NestJS)
 
-### 数据缩放
+Standard NestJS module pattern. Each feature in `apps/backend/src/modules/<name>/`:
 
-所有数值计算必须引用 `src/server/data/scales.ts` 中的系数：
-- `TIME_SCALE` — 时间范围缩放
-- `REGION_SCALE` — 地区缩放
-- `COST_SCALE` — 地区成本系数
-- `getMultiplier(timeRange, region)` — 计算最终倍数
+```
+<name>.module.ts      # NestJS module registration
+<name>.controller.ts  # Route handlers (@Controller decorator)
+<name>.service.ts     # Business logic (@Injectable)
+```
 
-## 编码规范
+14 feature modules registered in `apps/backend/src/app.module.ts`:
+kpi, channels, users, funnel, reputation, app-market, health, market-intelligence, aso, market-command, ai, marketing, sensor-tower.
 
-- **语言**：TypeScript strict 模式，禁止 `any`（warning 级别）
-- **命名**：
-  - 文件名：`kebab-case.ts` / `PascalCase.tsx`
-  - 变量/函数：`camelCase`
-  - 类型/接口：`PascalCase`
-  - 常量：`UPPER_SNAKE_CASE`
-- **导入**：使用 `type import` 导入类型（`import type { X } from '...'`）
-- **注释**：关键业务逻辑用中文注释，代码层面用英文
-- **格式**：Prettier 自动格式化（2 空格、单引号、尾逗号）
+Shared code in `apps/backend/src/common/`:
+- `dto/query.dto.ts` — BaseQueryDto (timeRange, region, etc.)
+- `scaling/scales.ts` — TIME_SCALE, REGION_SCALE, COST_SCALE, `getMultiplier()`
+- `utils/date-range.ts`, `utils/region-filter-orm.ts`
+- `interceptors/response.interceptor.ts` — wraps all responses in `{ success, data, meta }`
+- `filters/http-exception.filter.ts` — unified error handling
 
-## 禁止事项
+Global prefix: `/api/v1` (set in `main.ts`).
 
-- ❌ 不改动现有组件的 UI 布局和样式
-- ❌ 不在代码中硬编码 API Key（使用环境变量）
-- ❌ 不跳过 TypeScript 类型检查
-- ❌ 不在前端暴露服务端密钥
-- ❌ 不引入未在 package.json 中声明的依赖
+### Frontend
 
-## 前端对接规范
+Components in `apps/frontend/src/components/` (14 page components + 2 pickers).
+Shared code in `apps/frontend/src/lib/`:
+- `api.ts` — API call functions
+- `DashboardContext.tsx` — global state (timeRange, selectedRegion)
+- `sensorTowerApi.ts` — Sensor Tower client
 
-替换组件硬编码数据时：
-1. 在 `src/lib/api.ts` 添加 API 调用函数
-2. 创建 React hook（`useXxx`）带 loading/error 状态
-3. 在组件中替换数据源，保持 UI 不变
-4. 确保 DashboardContext 的 timeRange/region 变化时自动 refetch
+Vite proxies `/api` → `http://localhost:3000` in dev.
 
-## 缓存策略
+### Database
 
-| 数据类型 | TTL | 缓存 Key |
-|----------|-----|----------|
-| 实时健康监测 | 不缓存 | - |
-| AI 告警 | 30s | `alert:latest` |
+Prisma schema at `apps/backend/prisma/schema.prisma`. 5 models:
+`DailyAggregate`, `UserFunnel`, `FtdFttConversion`, `FttRetention`, `ChannelLtv`.
+All use `@map()` to snake_case table names. DB connection via `DATABASE_URL` env var.
+
+Default dev DB: `postgresql://dashboard:dashboard_dev_2026@localhost:5432/dashboard_v3`
+
+### Response format
+
+All API responses wrapped by `ResponseInterceptor`:
+```json
+{ "success": true, "data": { ... }, "meta": { "timestamp": "..." } }
+```
+
+## Coding conventions
+
+- TypeScript strict mode
+- Files: `kebab-case.ts` / `PascalCase.tsx`
+- Use `import type` for type-only imports
+- Backend: named exports only, no default exports
+- Prettier: 2 spaces, single quotes, trailing commas, 100 char width, LF line endings
+- Do not change existing component UI/layout/styles — only replace data sources
+
+## Frontend integration pattern
+
+When replacing hardcoded data with API calls:
+1. Add API function in `apps/frontend/src/lib/api.ts`
+2. Create `useXxx` hook with loading/error states
+3. Replace data source in component, keep UI identical
+4. Ensure DashboardContext timeRange/region changes trigger refetch
+
+## Git
+
+- Branch: `master` (CI triggers on push/PR to master)
+- Commit format: `type(scope): description` (feat/fix/refactor/chore/docs/test/style)
+- Pre-commit hook exists but is empty (no lint-staged enforcement)
+- CI: typecheck → lint → format:check → build (uses `npm ci` — may need fixing)
+
+## Environment
+
+```bash
+# apps/backend/.env
+DATABASE_URL="postgresql://dashboard:dashboard_dev_2026@localhost:5432/dashboard_v3"
+REDIS_URL="redis://localhost:6379"
+PORT=3000
+NODE_ENV="development"
+
+# Root .env (for Sensor Tower)
+SENSORTOWER_API_KEY=...
+```
+
+## Cache TTLs (when Redis caching is implemented)
+
+| Data | TTL | Key pattern |
+|------|-----|-------------|
+| Health | no cache | — |
+| AI alerts | 30s | `alert:latest` |
 | KPI | 5min | `kpi:{region}:{timeRange}` |
-| 渠道/舆情 | 10min | `channels:{region}:{timeRange}` |
-| App 市场/情报 | 30min | `app-market:{platform}:{region}` |
+| Channels/Reputation | 10min | `channels:{region}:{timeRange}` |
+| App market/Intelligence | 30min | `app-market:{platform}:{region}` |
 | Sensor Tower | 1h | `sensortower:{platform}:{dates}` |
-
-## Git 规范
-
-- Commit 格式：`type(scope): description`
-  - 类型：`feat` / `fix` / `refactor` / `chore` / `docs` / `test` / `style`
-  - 示例：`feat(api): add KPI endpoint with time range filtering`
-- Pre-commit hook 自动运行 lint-staged（ESLint + Prettier）
-- CI 检查：typecheck + lint + format + build
-
-## 自定义 Skills
-
-使用 `/create-api-endpoint` 快速创建 API 端点
-使用 `/connect-frontend-component` 对接前端组件
-使用 `/run-quality-check` 运行完整质量检查
