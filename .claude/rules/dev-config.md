@@ -90,3 +90,58 @@ REDIS_URL="redis://localhost:6379"
 PORT=3000
 NODE_ENV="development"
 ```
+
+## 第三方 API 凭证配置
+
+### Sensor Tower
+```env
+SENSORTOWER_API_KEY=ST0_ku78zgJi_xLibVBEFrw1yMB
+```
+已有，直接使用。
+
+### App Store Connect API
+**认证方式：JWT 签名**（不是简单 API Key）
+
+**获取步骤：**
+1. 登录 https://appstoreconnect.apple.com
+2. 用户和访问 → 集成 → App Store Connect API
+3. 点击「密钥」→ 生成新密钥
+4. 记录页面顶部的 **Issuer ID**
+5. 记录生成密钥时显示的 **Key ID**
+6. 下载 **.p8 私钥文件**（只下载一次，务必保存）
+
+```env
+APPLE_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+APPLE_KEY_ID=XXXXXXXXXX
+APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIGTAg...\n-----END PRIVATE KEY-----"
+```
+
+**可提供的数据：** App 下载量、评分、评论数、上架状态、曝光量、产品页浏览量
+
+### Google Play Console API
+**认证方式：Service Account JSON**（不是 API Key，API Key 无法访问 App 数据）
+
+**获取步骤：**
+1. 登录 https://console.cloud.google.com
+2. APIs & Services → Library → 搜索 **Google Play Android Developer API** → 启用
+3. APIs & Services → Credentials → Create Credentials → **Service Account**
+4. 填写名称 → Create and Continue → 跳过权限设置 → Done
+5. 点击刚创建的 Service Account → **Keys** 标签 → Add Key → Create new key → 选择 **JSON** → 下载
+6. 登录 https://play.google.com/console
+7. 用户和权限 → 邀请该 Service Account 的邮箱（格式：xxx@project-id.iam.gserviceaccount.com）
+8. 给予 **查看应用数据** 权限
+
+```env
+GOOGLE_PLAY_SERVICE_ACCOUNT_PATH=./config/google-play-sa.json
+```
+
+**可提供的数据：** App 下载量/安装量、评分、评论数、崩溃率、上架状态、收入数据
+
+### Google Gemini AI
+```env
+GEMINI_API_KEY=your_key_here
+```
+用于 AI 深度诊断报告（AIDiagnosticModal 组件）。
+
+### 凭证文件存放
+Service Account JSON 和 .p8 私钥文件放在 `apps/backend/config/` 目录下，该目录已在 `.gitignore` 中排除。

@@ -8,3 +8,6 @@ coverage/
 .prettiercache
 dist/
 .vercel
+apps/backend/config/*.json
+apps/backend/config/*.p8
+apps/backend/env/

@@ -11,6 +11,7 @@ import {
 import { useApi } from '../lib/hooks/useApi';
 import { fetchMarketingROI, type WeeklyROI } from '../lib/api';
 import { SkeletonLoader, ApiError } from './shared/ApiStates';
+import LiveBadge from './shared/LiveBadge';
 
 const FALLBACK_WEEKS: WeeklyROI[] = [
   { week: 'W1', spend: 4000, revenue: 2400, roi: 1.6 },
@@ -82,8 +83,9 @@ export default function MarketingROI() {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <div>
+        <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-900">营销 ROI 趋势</h2>
+          <LiveBadge />
           <p className="text-xs text-gray-500 uppercase tracking-wider">Marketing ROI Trend</p>
         </div>
         <div className="flex gap-4">

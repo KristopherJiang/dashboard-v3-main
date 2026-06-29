@@ -16,6 +16,7 @@ import { useDashboardContext } from '../lib/DashboardContext';
 import { useApi } from '../lib/hooks/useApi';
 import { fetchUserDistribution, type DistributionNode } from '../lib/api';
 import { ApiError, SkeletonLoader } from './shared/ApiStates';
+import LiveBadge from './shared/LiveBadge';
 
 const UserDistributionSunburst = () => {
   const [localRegion, setLocalRegion] = useState('Global');
@@ -148,9 +149,12 @@ const UserDistributionSunburst = () => {
             <Layers size={20} />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight leading-none text-slate-900">
-              新增用户来源构成矩阵
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight leading-none text-slate-900">
+                新增用户来源构成矩阵
+              </h1>
+              <LiveBadge />
+            </div>
             <p className="text-slate-400 text-[9px] font-bold uppercase tracking-[0.2em] mt-1">
               Multi-Tier Growth Attribution
             </p>

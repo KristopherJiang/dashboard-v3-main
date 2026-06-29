@@ -12,6 +12,7 @@ import {
 import { useApi } from '../lib/hooks/useApi';
 import { fetchFunnel, type FunnelStep } from '../lib/api';
 import { SkeletonLoader, ApiError } from './shared/ApiStates';
+import LiveBadge from './shared/LiveBadge';
 
 // UI 元数据：图标、副标题、漏斗梯形宽度（纯展示层，不来自 API）
 const STEP_META: Record<
@@ -90,8 +91,9 @@ export default function AcquisitionEfficiency() {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 flex items-center gap-2">
         <h2 className="text-xl font-bold text-gray-900">获客转化全链路漏斗</h2>
+        <LiveBadge />
       </div>
 
       {/* Table Header */}

@@ -2,30 +2,29 @@
 
 > 最后更新：2026-06-27
 
-## 已对接真实数据（6/14）
+## 已对接真实数据（7/14）
 
 | # | 组件 | 接口 | 数据表 | 数据源 xlsx | 备注 |
 |---|------|------|--------|-----------|------|
-| 1 | KPICards（8张指标卡片） | `GET /api/v1/kpi` | `daily_aggregates` + `ftt_retention` + `ftd_ftt_conversion` | 聚合数据2 + UID颗粒度 + 需求特化1 + 用户维表2 | ✅ |
-| 2 | ChannelEfficiencyMatrix（渠道效率矩阵） | `GET /api/v1/channels` | `channel_ltv` | 需求特化2 + UID颗粒度 | ✅ |
-| 3 | AcquisitionEfficiency（获客漏斗） | `GET /api/v1/funnel` | `user_funnel` | 用户维表1 | ✅ |
-| 4 | UserDistributionSunburst（用户来源旭日图） | `GET /api/v1/users/distribution` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
-| 5 | MarketingROI（营销ROI） | `GET /api/v1/marketing/roi` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
-| 6 | GlobalRegionPicker（地区选择器） | `GET /api/v1/regions` | `regions` | 手动配置 | ✅ 从数据库读取地区/国家结构 |
+| 1 | KPICards（注册人数/FTD人数/FTT人数/Net Deposit 净入金/总交易量/转化率/留存率） | `GET /api/v1/kpi` | `daily_aggregates` + `ftt_retention` + `ftd_ftt_conversion` | 聚合数据2 + UID颗粒度 + 需求特化1 + 用户维表2 | ✅ |
+| 2 | ChannelEfficiencyMatrix（各渠道获客成本与 ROI 矩阵） | `GET /api/v1/channels` | `channel_ltv` | 需求特化2 + UID颗粒度 | ✅ |
+| 3 | AcquisitionEfficiency（获客转化全链路漏斗） | `GET /api/v1/funnel` | `user_funnel` | 用户维表1 | ⚠️ 表中只有 2025 数据，2026 未导入 |
+| 4 | UserDistributionSunburst（新增用户来源构成矩阵） | `GET /api/v1/users/distribution` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+| 5 | MarketingROI（营销 ROI 趋势） | `GET /api/v1/marketing/roi` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+| 6 | UserDemographics（用户画像与地域分布） | `GET /api/v1/users/demographics` | `daily_aggregates` | 聚合数据2 + UID颗粒度 | ✅ |
+| 7 | GlobalRegionPicker（地区维度选择器） | `GET /api/v1/regions` | `regions` | 手动配置 | ✅ 从数据库读取地区/国家结构 |
 
-## 未对接 / 使用 Mock 数据（8/14）
+## 未对接 / 使用 Mock 数据（7/14）
 
 | # | 组件 | 接口 | 缺什么 |
 |---|------|------|--------|
-| 6 | Reputation（舆情散点） | `GET /api/v1/reputation` | 无真实数据源，需 NLP 服务或第三方舆情 API |
-| 7 | AppMarketOverview（App市场） | `GET /api/v1/app-market` | 需对接 Sensor Tower API |
-| 8 | WebsiteHealthMonitor（健康监测） | `GET /api/v1/health` | 需对接 Ping 监控服务 |
-| 9 | GlobalIntelligence（市场情报） | `GET /api/v1/market-intelligence` | 无真实数据源，需 SEO/GEO/ASO 第三方 API |
-| 10 | MarketCommand（气泡地图） | `GET /api/v1/market/command` | 无真实数据源 |
-| 11 | AIAlertDrawer（AI告警） | `GET /api/v1/ai/alerts` | 无真实数据源 |
-| 12 | AIDiagnosticModal（AI诊断） | `GET /api/v1/ai/diagnostic` | 需对接 LLM（Gemini） |
-| 13 | MarketExposureASO（ASO排名） | `GET /api/v1/aso` | 需对接 Sensor Tower / AppTweak |
-| 14 | UserDemographics（用户画像） | `GET /api/v1/users/demographics` | `daily_aggregates` 有部分数据，需补充年龄/地域维度 |
+| 8 | Reputation（品牌舆情监控） | `GET /api/v1/reputation` | 无真实数据源，需 NLP 服务或第三方舆情 API |
+| 9 | AppMarketOverview（应用市场口碑摘要） | `GET /api/v1/app-market` | 需对接 Sensor Tower API |
+| 10 | WebsiteHealthMonitor（官网/APP健康度监测） | `GET /api/v1/health` | 需对接 Ping 监控服务 |
+| 11 | GlobalIntelligence（市场曝光度） | `GET /api/v1/market-intelligence` | 无真实数据源，需 SEO/GEO/ASO 第三方 API |
+| 12 | MarketCommand（全球市场曝光度） | `GET /api/v1/market/command` | 无真实数据源 |
+| 13 | AIAlertDrawer（AI 智能监控中心） | `GET /api/v1/ai/alerts` | 无真实数据源 |
+| 14 | AIDiagnosticModal（AI 深度战略诊断报告） | `GET /api/v1/ai/diagnostic` | 需对接 LLM（Gemini） |
 
 ## 数据库表使用情况
 
@@ -35,7 +34,7 @@
 | `ftt_retention` | 2025-01 ~ 2025-04 | KPICards (D30留存) | 需求特化1 |
 | `channel_ltv` | 2025-01 ~ 2026-06 | ChannelEfficiencyMatrix | 需求特化2 + UID颗粒度 |
 | `user_funnel` | 2025-01 ~ 2025-04 | AcquisitionEfficiency | 用户维表1 |
-| `ftd_ftt_conversion` | 2025-01 ~ 2026-06 | KPICards (FTD→FTT转化率) | 用户维表2 + UID颗粒度 |
+| `ftd_ftt_conversion` | 2025-01 ~ 2026-06 | KPICards（FTD→FTT转化率） | 用户维表2 + UID颗粒度 |
 | `regions` | 配置数据 | GlobalRegionPicker | 手动配置（70个国家） |
 
 ## 数据导入记录

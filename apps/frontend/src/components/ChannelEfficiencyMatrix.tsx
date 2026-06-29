@@ -20,6 +20,7 @@ import { useDashboardContext } from '../lib/DashboardContext';
 import { useApi } from '../lib/hooks/useApi';
 import { fetchChannels, type ChannelNode } from '../lib/api';
 import { ApiError, SkeletonLoader } from './shared/ApiStates';
+import LiveBadge from './shared/LiveBadge';
 
 const ChannelEfficiencyMatrix = () => {
   const [expandedRows, setExpandedRows] = useState(['retail', 'paid_ads']);
@@ -299,9 +300,12 @@ const ChannelEfficiencyMatrix = () => {
             <Target className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-none">
-              各渠道获客成本与 ROI 矩阵
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-gray-900 leading-none">
+                各渠道获客成本与 ROI 矩阵
+              </h1>
+              <LiveBadge />
+            </div>
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">
               Intelligent Gradient Attribution Matrix
             </p>

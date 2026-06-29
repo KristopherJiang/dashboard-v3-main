@@ -28,6 +28,7 @@ import { fetchKPI, type KPICard } from "../lib/api";
 import { useDashboardContext } from "../lib/DashboardContext";
 import { useApi } from "../lib/hooks/useApi";
 import { ApiError, SkeletonCard } from "./shared/ApiStates";
+import LiveBadge from "./shared/LiveBadge";
 
 // --- Data Definitions (保留用于 fallback 或图表形状参考) ---
 
@@ -543,11 +544,12 @@ const CardWrapper = ({ children }: { children: React.ReactNode }) => (
 	</div>
 );
 
-const CardHeader = ({ title }: any) => (
+const CardHeader = ({ title, live }: any) => (
 	<div className="flex justify-between items-start mb-2">
 		<div className="flex items-center gap-1.5 text-gray-500">
 			<span className="text-sm font-medium">{title}</span>
 		</div>
+		{live && <LiveBadge />}
 	</div>
 );
 
@@ -1365,7 +1367,7 @@ export default function KPICards() {
 		<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 			{/* 1. 注册人数 */}
 			<CardWrapper>
-				<CardHeader title="注册人数" />
+				<CardHeader title="注册人数" live />
 				<CardValue value={regVal} {...trendA} />
 				<div className="flex justify-between items-center mb-2 px-1">
 					<span className="text-[10px] text-gray-400 font-medium">
@@ -1417,7 +1419,7 @@ export default function KPICards() {
 
 			{/* 2. FTD人数 */}
 			<CardWrapper>
-				<CardHeader title="FTD人数" />
+				<CardHeader title="FTD人数" live />
 				<CardValue value={ftdVal} {...trendFTD} />
 				<div className="flex justify-between items-center mb-2 px-1">
 					<span className="text-[10px] text-gray-400 font-medium">
@@ -1469,7 +1471,7 @@ export default function KPICards() {
 
 			{/* 3. FTT人数 */}
 			<CardWrapper>
-				<CardHeader title="FTT人数" />
+				<CardHeader title="FTT人数" live />
 				<CardValue value={fttVal} {...trendFTT} />
 				<div className="flex justify-between items-center mb-2 px-1">
 					<span className="text-[10px] text-gray-400 font-medium">
@@ -1521,7 +1523,7 @@ export default function KPICards() {
 
 			{/* 4. Net Deposit */}
 			<CardWrapper>
-				<CardHeader title="Net Deposit (净入金)" />
+				<CardHeader title="Net Deposit (净入金)" live />
 				<CardValue value={depVal} {...trendDep} />
 				<div className="flex justify-between items-center px-1">
 					<span className="text-[10px] text-gray-400 font-medium tracking-tight">

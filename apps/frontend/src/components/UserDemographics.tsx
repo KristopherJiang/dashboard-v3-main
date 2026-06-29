@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useApi } from '../lib/hooks/useApi';
 import { fetchUserDemographics, type DemographicItem } from '../lib/api';
 import { SkeletonLoader, ApiError } from './shared/ApiStates';
+import LiveBadge from './shared/LiveBadge';
 
 // 颜色映射：前 4 个地区依次分配 CSS class
 const REGION_COLORS = ['bg-blue-600', 'bg-blue-400', 'bg-blue-300', 'bg-gray-200'];
@@ -54,7 +55,10 @@ export default function UserDemographics() {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">用户画像与地域分布</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900">用户画像与地域分布</h2>
+          <LiveBadge />
+        </div>
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
           Demographics
         </span>
